@@ -521,6 +521,15 @@ window.renderMaterials = function(main){
     el.onclick = () => deleteRemoteMaterial(main, el.dataset.remdel);
   });
 };
+/* -------------------- Экспорт для использования из index.html -------------------- */
+window.__ghDeleteRemote = function(remoteId, main){
+  return deleteRemoteMaterial(main, remoteId);
+};
+window.__ghIsConfigured = function(){
+  return !!(ghConfig && ghConfig.token);
+};
+window.__ghLoadRemoteIndex = loadRemoteIndex;
+window.__ghGetRemoteMaterials = function(){ return remoteMaterials; };
 
 /* -------------------- Автозагрузка индекса -------------------- */
 (async function init(){
