@@ -1,0 +1,2693 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1420">
+<title>VolVoxPro — рабочее пространство проекта</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg:#0f1420; --bg2:#161d2d; --bg3:#1e2638; --border:#2a3446;
+    --text:#e6ecf5; --muted:#8a97ad; --accent:#4f8cff; --accent2:#22c55e;
+    --danger:#ef4444; --warn:#f59e0b; --purple:#a855f7; --overlay:rgba(5,8,14,.72);
+  }
+  html[data-theme="light"]{
+    --bg:#f6f8fc; --bg2:#ffffff; --bg3:#eef2f8; --border:#d9e0ec;
+    --text:#0f1a2c; --muted:#65728a; --accent:#2b6cf6; --accent2:#16a34a;
+    --danger:#dc2626; --warn:#d97706; --purple:#8b5cf6; --overlay:rgba(15,26,44,.42);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,sans-serif;
+    background:var(--bg); color:var(--text); overflow:hidden; -webkit-font-smoothing:antialiased}
+  .app{display:grid; grid-template-columns:270px 1fr; height:100vh}
+  .sidebar{background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow-y:auto}
+  .logo{padding:18px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px}
+  .logo-mark{width:36px; height:36px; border-radius:10px;
+    background:linear-gradient(135deg,#4f8cff,#a855f7); display:grid; place-items:center;
+    font-weight:700; font-size:18px; color:#fff}
+  .logo-text b{display:block; font-size:16px; letter-spacing:.3px}
+  .logo-text span{font-size:11px; color:var(--muted)}
+  .nav{padding:14px 10px; flex:1}
+  .nav-title{font-size:11px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--muted); padding:12px 10px 6px; font-weight:600}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border-radius:9px; cursor:pointer; font-size:14px; transition:.15s; user-select:none; margin-bottom:2px}
+  .nav-item:hover{background:var(--bg3)}
+  .nav-item.active{background:var(--accent); color:#fff}
+  .nav-item .ic{width:20px; text-align:center; font-size:15px}
+  .sidebar-footer{padding:12px 16px; border-top:1px solid var(--border);
+    font-size:11px; color:var(--muted); line-height:1.6; display:flex; flex-direction:column; gap:8px}
+  .sidebar-actions{display:flex; gap:6px; flex-wrap:wrap}
+  .chipbtn{padding:4px 9px; border-radius:20px; background:var(--bg3); border:1px solid var(--border);
+    cursor:pointer; font-size:11px; color:var(--text)}
+  .chipbtn:hover{border-color:var(--accent)}
+  .chipbtn.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  .main{overflow-y:auto; padding:24px 32px 80px}
+  .page-title{font-size:24px; margin-bottom:6px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .page-sub{color:var(--muted); font-size:13px; margin-bottom:20px}
+  .btn{display:inline-flex; align-items:center; gap:7px; padding:9px 16px; border-radius:9px;
+    border:1px solid var(--border); background:var(--bg3); color:var(--text); cursor:pointer;
+    font-size:13px; font-weight:500; transition:.15s}
+  .btn:hover{background:#26314a; border-color:#3a465e}
+  html[data-theme="light"] .btn:hover{background:#e4ebf7}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{background:#3d7cf0}
+  .btn.success{background:var(--accent2); border-color:var(--accent2); color:#fff}
+  .btn.danger{background:transparent; border-color:#4b2a2a; color:#ff9a9a}
+  .btn.danger:hover{background:#2a1616}
+  html[data-theme="light"] .btn.danger{color:var(--danger); border-color:#f3c4c4}
+  .btn.sm{padding:5px 10px; font-size:12px}
+  .btn.ghost{background:transparent}
+  .btn.big{padding:14px 22px; font-size:14px}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  input,textarea,select{width:100%; padding:10px 12px; border-radius:9px;
+    border:1px solid var(--border); background:var(--bg); color:var(--text);
+    font-family:inherit; font-size:13px; outline:none; transition:.15s}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  input[type="file"]{padding:8px 10px}
+  textarea{resize:vertical; min-height:70px; line-height:1.5}
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:500}
+  .field{margin-bottom:14px}
+  .row{display:grid; gap:14px}
+  .row.c2{grid-template-columns:1fr 1fr}
+  .row.c3{grid-template-columns:1fr 1fr 1fr}
+  .row.c4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--bg2); border:1px solid var(--border);
+    border-radius:13px; padding:18px 20px; margin-bottom:16px}
+  .card h3{font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:8px; justify-content:space-between}
+  .muted{color:var(--muted)}
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:20px; flex-wrap:wrap}
+  .tab{padding:9px 14px; cursor:pointer; font-size:13px; color:var(--muted);
+    border-bottom:2px solid transparent; margin-bottom:-1px; transition:.15s; white-space:nowrap}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent); border-bottom-color:var(--accent); font-weight:600}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px;
+    background:var(--bg3); color:var(--muted); margin-right:5px}
+  .pill.g{background:#123a26; color:#5ee89a}
+  .pill.y{background:#3a2e12; color:#f0c66b}
+  .pill.r{background:#3a1212; color:#ff9090}
+  .pill.b{background:#12294a; color:#8bbcff}
+  .empty{color:var(--muted); font-size:13px; padding:24px; text-align:center;
+    border:1px dashed var(--border); border-radius:11px}
+  .progress{height:8px; background:var(--bg3); border-radius:5px; overflow:hidden}
+  .progress > div{height:100%; background:linear-gradient(90deg,var(--accent),var(--purple)); transition:width .3s}
+  .kv{display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; gap:8px}
+  .kv:last-child{border-bottom:none}
+  .badge{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; background:var(--bg3)}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px}
+  .chip{padding:6px 13px; border-radius:20px; background:var(--bg3); border:1px solid var(--border);
+    cursor:pointer; font-size:12px; transition:.15s}
+  .chip:hover{border-color:var(--accent)}
+  .chip.active{background:var(--accent); border-color:var(--accent); color:#fff}
+  .ideas-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px}
+  .idea{background:var(--bg2); border:1px solid var(--border); border-radius:13px;
+    padding:16px; display:flex; flex-direction:column; transition:.15s}
+  .idea:hover{border-color:#3a465e; transform:translateY(-2px)}
+  .idea h4{font-size:14px; margin-bottom:8px}
+  .idea p{font-size:12.5px; color:var(--muted); line-height:1.55; flex:1; margin-bottom:12px}
+  .idea .tags{margin-bottom:12px}
+  .mat-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px}
+  .mat-card{background:var(--bg2); border:1px solid var(--border); border-radius:16px;
+    overflow:hidden; cursor:pointer; transition:.2s; display:flex; flex-direction:column; position:relative}
+  .mat-card:hover{transform:translateY(-3px); border-color:var(--accent); box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .mat-cover{height:170px; position:relative; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; border-bottom:1px solid var(--border)}
+  .mat-cover .big-emoji{font-size:64px; filter:drop-shadow(0 4px 12px rgba(0,0,0,.35)); z-index:2}
+  .mat-cover .pattern{position:absolute; inset:0; opacity:.15;
+    background-image:linear-gradient(rgba(255,255,255,.4) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.4) 1px,transparent 1px);
+    background-size:22px 22px}
+  .mat-cover .pages-badge{position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); color:#fff;
+    padding:4px 9px; border-radius:20px; font-size:11px; font-weight:600; z-index:3}
+  .mat-cover .tag-badge{position:absolute; bottom:10px; left:10px; background:rgba(255,255,255,.92); color:#0f1a2c;
+    padding:4px 10px; border-radius:20px; font-size:10.5px; font-weight:700; z-index:3; text-transform:uppercase}
+  .mat-cover .read-badge{position:absolute; bottom:10px; right:10px; background:var(--accent2); color:#fff;
+    padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; z-index:3; display:none}
+  .mat-card.read .read-badge{display:inline-block}
+  .mat-cover .custom-badge{position:absolute; top:10px; right:10px; background:rgba(0,0,0,.55); color:#fff;
+    padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; z-index:3; display:none}
+  .mat-card.custom .custom-badge{display:inline-block}
+  .del-mat-btn{position:absolute; top:10px; right:10px; z-index:5; width:34px; height:34px; border-radius:50%;
+    background:rgba(239,68,68,.92); color:#fff; display:grid; place-items:center; cursor:pointer;
+    font-size:16px; line-height:1; transition:.15s; box-shadow:0 2px 8px rgba(0,0,0,.5); border:2px solid rgba(255,255,255,.25)}
+  .del-mat-btn:hover{background:var(--danger); transform:scale(1.12)}
+  .mat-card.custom .custom-badge{right:52px !important}
+  .mat-body{padding:14px 16px 16px; display:flex; flex-direction:column; flex:1}
+  .mat-body h4{font-size:14.5px; margin-bottom:6px; line-height:1.35}
+  .mat-body p{font-size:12.5px; color:var(--muted); line-height:1.5; flex:1}
+  .mat-body .open-hint{margin-top:10px; font-size:11.5px; color:var(--accent); font-weight:600; display:flex; align-items:center; gap:5px}
+  .up-zone{border:2px dashed var(--border); border-radius:13px; padding:20px; background:var(--bg2); margin-top:16px}
+  .up-zone.drag{border-color:var(--accent); background:#1a2438}
+  .up-zone .drop-hint{text-align:center; padding:18px 12px; cursor:pointer; transition:.15s}
+  .up-zone .drop-hint:hover{opacity:.85}
+  .up-zone .drop-hint .big{font-size:40px; margin-bottom:8px}
+  .up-zone .drop-hint b{display:block; font-size:14px; margin-bottom:4px}
+  .up-zone .drop-hint small{color:var(--muted); font-size:12px}
+  .mentor-upload-card{border-color:#7a622b; background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.02))}
+  .cloud-hero{background:linear-gradient(135deg,rgba(79,140,255,.18),rgba(34,197,94,.12));
+    border:1px solid var(--accent); border-radius:16px; padding:24px; margin-bottom:18px}
+  .cloud-code{font-family:'Courier New',monospace; font-size:38px; font-weight:800;
+    letter-spacing:6px; color:var(--accent); padding:16px 24px; background:var(--bg);
+    border:2px dashed var(--accent); border-radius:12px; text-align:center; margin:14px 0;
+    user-select:all}
+  .cloud-status{display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9px;
+    background:var(--bg3); font-size:12.5px; margin-bottom:14px}
+  .cloud-status.ok{background:#123a26; color:#5ee89a}
+  .cloud-status.err{background:#3a1212; color:#ff9090}
+  .cloud-status.wait{background:#3a2e12; color:#f0c66b}
+  .cloud-status .dot2{width:8px; height:8px; border-radius:50%; background:currentColor}
+  .cloud-spinner{width:16px; height:16px; border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; display:inline-block; vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .pdf-viewer{position:fixed; inset:0; z-index:250; background:#0a0f1a; display:none; flex-direction:column; color:#e6ecf5}
+  .pdf-viewer.show{display:flex}
+  .pdf-header{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:10px 16px; background:#111827; border-bottom:1px solid #1e2638; flex-wrap:wrap}
+  .pdf-header .left{display:flex; align-items:center; gap:12px; min-width:0; flex:1}
+  .pdf-header .icon-box{width:36px; height:36px; border-radius:9px; display:grid; place-items:center;
+    font-size:20px; flex-shrink:0}
+  .pdf-header .title-wrap{min-width:0; flex:1}
+  .pdf-header .title-wrap b{font-size:14px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pdf-header .title-wrap small{color:#8a97ad; font-size:11.5px}
+  .pdf-header .right{display:flex; gap:6px; flex-wrap:wrap}
+  .pdf-frame-wrap{flex:1; position:relative; background:#0a0f1a}
+  .pdf-frame{width:100%; height:100%; border:none; background:#fff}
+  .pdf-placeholder{position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; padding:30px; color:#8a97ad; gap:12px}
+  .pdf-placeholder.show{display:flex}
+  .pdf-placeholder .big{font-size:60px}
+  .kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .col{background:var(--bg2); border:1px solid var(--border); border-radius:13px; padding:14px; min-height:220px}
+  .col-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  .col-head h4{font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted)}
+  .col-head .count{font-size:11px; background:var(--bg3); padding:2px 8px; border-radius:20px}
+  .task{background:var(--bg3); border:1px solid var(--border); border-radius:9px; padding:10px 12px;
+    margin-bottom:8px; font-size:13px; cursor:grab; display:flex; flex-direction:column; gap:6px}
+  .task .row1{display:flex; justify-content:space-between; gap:8px; align-items:flex-start}
+  .task .del{color:var(--muted); cursor:pointer; font-size:15px; line-height:1}
+  .task .del:hover{color:var(--danger)}
+  .task .meta{display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:11px; color:var(--muted)}
+  .task .assignee{padding:1px 7px; border-radius:20px; font-size:10px; font-weight:600; color:#fff}
+  .col.dragover{border-color:var(--accent); background:#1a2438}
+  .add-task{display:flex; gap:6px; margin-top:8px}
+  .add-task input{font-size:12px; padding:7px 10px}
+  .journal-entry{background:var(--bg2); border:1px solid var(--border); border-radius:11px;
+    padding:14px 16px; margin-bottom:10px; display:flex; gap:14px}
+  .journal-date{min-width:90px; font-size:12px; color:var(--muted); border-right:1px solid var(--border); padding-right:14px}
+  .journal-body{flex:1; font-size:13px; line-height:1.55; white-space:pre-wrap}
+  .journal-body b{display:block; margin-bottom:4px; font-size:13.5px}
+  .reflect-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:8px}
+  .reflect-3 .field{margin:0}
+  .tool-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px}
+  .tool-card{background:var(--bg2); border:1px solid var(--border); border-radius:13px; padding:18px 20px}
+  .tool-card h3{font-size:15px; margin-bottom:14px; display:flex; align-items:center; gap:8px}
+  .tool-card.wide{grid-column:span 2}
+  .pomo{text-align:center}
+  .pomo-time{font-size:52px; font-weight:700; font-variant-numeric:tabular-nums; margin:8px 0 4px; letter-spacing:2px}
+  .pomo-mode{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px}
+  .pomo-actions{display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap}
+  .pomo-task{margin-top:12px; font-size:12px}
+  .sm-grid{display:grid; grid-template-columns:60px 1fr; gap:10px 12px; align-items:start}
+  .sm-grid label{color:var(--accent); font-weight:700; font-size:14px; padding-top:10px}
+  .brainstorm-list{list-style:none; margin-bottom:12px}
+  .brainstorm-list li{background:var(--bg3); border:1px solid var(--border); border-radius:9px;
+    padding:9px 12px; margin-bottom:6px; font-size:13px; display:flex; justify-content:space-between; gap:8px; align-items:center}
+  .vote{padding:2px 8px; border-radius:20px; background:var(--bg2); cursor:pointer; font-size:11px; border:1px solid var(--border)}
+  .vote.voted{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .eisen{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .quad{border:1px solid var(--border); border-radius:10px; padding:12px; min-height:120px}
+  .quad h5{font-size:11px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; color:var(--muted)}
+  .quad.q1{border-color:#7a2b2b; background:#1f1414}
+  .quad.q2{border-color:#2b5a3a; background:#13201a}
+  .quad.q3{border-color:#7a622b; background:#1f1c14}
+  .quad.q4{border-color:#3a3a4a; background:#16161f}
+  .quad-item{font-size:12px; padding:4px 0; display:flex; justify-content:space-between; gap:6px}
+  .quad-item span{color:var(--muted); cursor:pointer}
+  .gantt-row{display:grid; grid-template-columns:1fr 110px 110px 70px; gap:8px; margin-bottom:6px; align-items:center}
+  .gantt-row input{font-size:12px; padding:6px 9px}
+  .gantt-bar-wrap{height:8px; background:var(--bg3); border-radius:4px; overflow:hidden; margin:-2px 0 10px}
+  .gantt-bar{height:100%; background:linear-gradient(90deg,var(--accent),var(--purple))}
+  .ishi-cat{margin-bottom:10px}
+  .ishi-cat h5{font-size:12px; color:var(--accent); margin-bottom:5px}
+  .stage{display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border)}
+  .stage .box{width:20px; height:20px; border-radius:6px; border:2px solid var(--border); cursor:pointer;
+    display:grid; place-items:center; font-size:13px; transition:.15s; flex-shrink:0}
+  .stage.done .box{background:var(--accent2); border-color:var(--accent2); color:#fff}
+  .stage.done .label{text-decoration:line-through; color:var(--muted)}
+  .stage .label{flex:1; font-size:14px}
+  .stage-block{padding:14px 0; border-bottom:1px solid var(--border)}
+  .stage-block .stage{border-bottom:none; padding:0}
+  .stage-task{display:flex; gap:8px; align-items:center; margin-bottom:6px}
+  .stage-task input{flex:1; padding:6px 10px; font-size:12px}
+  .crit-row{display:grid; grid-template-columns:1fr 130px; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border)}
+  .crit-row .name{font-size:13px}
+  .crit-row .hint{font-size:11px; color:var(--muted); margin-top:2px}
+  .crit-row select{padding:6px 10px; font-size:12px}
+  .member{display:flex; align-items:flex-start; gap:10px; padding:12px; background:var(--bg3);
+    border:1px solid var(--border); border-radius:9px; margin-bottom:10px}
+  .avatar{width:34px; height:34px; border-radius:50%; display:grid; place-items:center;
+    font-weight:700; font-size:14px; color:#fff; flex-shrink:0; margin-top:2px}
+  .member .info{flex:1; font-size:13px; display:flex; flex-direction:column; gap:6px}
+  .member .info small{color:var(--muted); font-size:11.5px}
+  .xray-row{display:grid; grid-template-columns:1fr 80px; gap:10px; padding:6px 0; font-size:12.5px; align-items:center}
+  .xray-bar{height:6px; background:var(--bg3); border-radius:3px; overflow:hidden}
+  .xray-bar > div{height:100%; background:var(--accent)}
+  .xray-weak .xray-bar > div{background:var(--danger)}
+  .xray-mid .xray-bar > div{background:var(--warn)}
+  .xray-ok .xray-bar > div{background:var(--accent2)}
+  .heatmap{display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,12px); gap:3px; overflow-x:auto; padding-bottom:8px}
+  .heat-cell{width:12px; height:12px; border-radius:3px; background:var(--bg3)}
+  .heat-cell.l1{background:#1e4a2b} .heat-cell.l2{background:#2f7a3f}
+  .heat-cell.l3{background:#22c55e} .heat-cell.l4{background:#86efac}
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
+  .cal-head{font-size:11px; color:var(--muted); text-align:center; padding:6px 0; font-weight:600}
+  .cal-cell{background:var(--bg2); border:1px solid var(--border); border-radius:9px; padding:7px; min-height:76px; font-size:11.5px}
+  .cal-cell.other{opacity:.4}
+  .cal-cell.today{border-color:var(--accent)}
+  .cal-cell .d{font-weight:600; margin-bottom:4px; font-size:12px}
+  .cal-event{font-size:10.5px; background:var(--accent); color:#fff; padding:1px 5px; border-radius:4px; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .overlay{position:fixed; inset:0; background:var(--overlay); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:24px; backdrop-filter:blur(4px)}
+  .overlay.show{display:flex}
+  .modal{background:var(--bg2); border:1px solid var(--border); border-radius:16px;
+    max-width:620px; width:100%; max-height:88vh; overflow:auto; padding:24px 26px}
+  .modal h2{font-size:19px; margin-bottom:8px}
+  .modal p.sub{color:var(--muted); font-size:13px; margin-bottom:18px}
+  .modal-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:20px; flex-wrap:wrap}
+  .modal .code-input{font-family:'Courier New',monospace; font-size:26px; font-weight:700;
+    letter-spacing:4px; text-align:center; text-transform:uppercase; padding:14px 18px}
+  .search-input{font-size:16px; padding:12px 14px}
+  .search-results{max-height:55vh; overflow-y:auto; margin-top:14px}
+  .search-group{margin-bottom:14px}
+  .search-group h4{font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.6px; margin-bottom:6px}
+  .search-item{padding:9px 12px; border-radius:9px; cursor:pointer; font-size:13px}
+  .search-item:hover{background:var(--bg3)}
+  .search-item small{display:block; color:var(--muted); font-size:11.5px; margin-top:2px}
+  .wiz-steps{display:flex; gap:8px; margin-bottom:20px}
+  .wiz-step{flex:1; height:5px; border-radius:3px; background:var(--bg3)}
+  .wiz-step.active{background:var(--accent)}
+  .wiz-step.done{background:var(--accent2)}
+  .tpl-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .tpl{border:2px solid var(--border); border-radius:12px; padding:16px; cursor:pointer; transition:.15s}
+  .tpl.sel{border-color:var(--accent); background:var(--bg3)}
+  .tpl .big{font-size:26px; margin-bottom:8px}
+  .tpl h4{font-size:14px; margin-bottom:4px}
+  .tpl p{font-size:12px; color:var(--muted); line-height:1.5}
+  .defense{position:fixed; inset:0; background:#0a0f1a; z-index:200; display:none; flex-direction:column; color:#e6ecf5}
+  .defense.show{display:flex}
+  .defense-slide{flex:1; display:flex; flex-direction:column; justify-content:center; padding:8vh 10vw; overflow-y:auto}
+  .defense-slide h1{font-size:clamp(28px,4.5vw,54px); margin-bottom:20px; line-height:1.15}
+  .defense-slide h2{font-size:clamp(20px,2.4vw,30px); color:#8bbcff; text-transform:uppercase; letter-spacing:2px; margin-bottom:18px; font-weight:600}
+  .defense-slide p, .defense-slide li{font-size:clamp(15px,1.5vw,20px); line-height:1.6; color:#c8d4e6; white-space:pre-wrap}
+  .defense-slide ul{padding-left:22px}
+  .defense-footer{display:flex; justify-content:space-between; align-items:center; padding:14px 24px; border-top:1px solid #1e2638; font-size:13px; color:#8a97ad}
+  .defense-nav{display:flex; gap:8px}
+  .defense-nav button{background:#1e2638; border:1px solid #2a3446; color:#e6ecf5; padding:8px 16px; border-radius:9px; cursor:pointer; font-size:13px}
+  .toast{position:fixed; bottom:24px; right:24px; background:var(--accent2); color:#fff;
+    padding:12px 20px; border-radius:10px; font-size:13px; font-weight:600;
+    opacity:0; transform:translateY(10px); transition:.25s; pointer-events:none; z-index:300}
+  .toast.show{opacity:1; transform:translateY(0)}
+  .toast.err{background:var(--danger)}
+  .mentor-banner{background:#3a2e12; color:#f0c66b; padding:8px 14px; border-radius:9px;
+    font-size:12.5px; margin-bottom:14px; display:none; align-items:center; justify-content:space-between; gap:10px}
+  .mentor-banner.show{display:flex}
+  .mentor-note{font-size:12px; color:#f0c66b; margin-top:6px; padding:8px 10px; background:#2a2210; border-radius:7px; border-left:3px solid #f0c66b}
+  .save-ind{display:flex; align-items:center; gap:6px}
+  .save-ind .dot{width:7px; height:7px; border-radius:50%; background:var(--accent2)}
+  .hero-card{background:linear-gradient(135deg,rgba(79,140,255,.15),rgba(168,85,247,.12));
+    border:1px solid var(--accent); border-radius:13px; padding:20px 22px; margin-bottom:16px}
+  @media (max-width: 860px){
+    .app{grid-template-columns:1fr}
+    .sidebar{position:fixed; bottom:0; left:0; right:0; top:auto; height:auto;
+      border-right:none; border-top:1px solid var(--border); flex-direction:row;
+      overflow-x:auto; z-index:50; padding:6px 8px; gap:4px}
+    .logo, .nav-title, .sidebar-footer{display:none}
+    .nav{display:flex; padding:0; gap:4px; flex:1}
+    .nav-item{flex-direction:column; font-size:10px; padding:7px 10px; margin:0; gap:3px; min-width:56px}
+    .nav-item .ic{font-size:18px}
+    .main{padding:18px 16px 100px}
+    .row.c2, .row.c3, .row.c4{grid-template-columns:1fr}
+    .kanban{grid-template-columns:1fr}
+    .tool-card.wide{grid-column:span 1}
+    .ideas-grid, .mat-grid, .tpl-grid, .eisen, .reflect-3{grid-template-columns:1fr}
+    .cloud-code{font-size:28px; letter-spacing:4px}
+  }
+  ::-webkit-scrollbar{width:9px; height:9px}
+  ::-webkit-scrollbar-thumb{background:#2a3446; border-radius:5px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-text"><b>VolVoxPro</b><span>Рабочее пространство</span></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-footer">
+      <div class="save-ind"><span class="dot"></span><span id="saveTime">Готово</span></div>
+      <div class="sidebar-actions">
+        <div class="chipbtn" id="themeBtn">🌗 Тема</div>
+        <div class="chipbtn" id="searchBtn">🔍 Поиск</div>
+        <div class="chipbtn" id="mentorBtn">🎓 Ментор</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<div class="overlay" id="wizard">
+  <div class="modal">
+    <div class="wiz-steps" id="wizSteps"></div>
+    <div id="wizBody"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="wizSkip">Пропустить</button>
+      <button class="btn" id="wizBack" style="display:none">Назад</button>
+      <button class="btn primary" id="wizNext">Далее</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="searchOverlay">
+  <div class="modal">
+    <input class="search-input" id="searchInput" placeholder="Поиск по проекту, идеям, задачам, материалам…">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<div class="overlay" id="codeShowModal">
+  <div class="modal">
+    <h2>☁️ Сохранено в облако</h2>
+    <p class="sub">Запиши этот код — по нему можно загрузить прогресс на другом устройстве.</p>
+    <div class="cloud-code" id="newCodeDisplay">—</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <button class="btn primary" id="copyCodeBtn">📋 Скопировать код</button>
+      <button class="btn" id="downloadCodeBtn">💾 Скачать JSON</button>
+    </div>
+    <p class="muted" style="font-size:12px;text-align:center;margin-top:16px">
+      ⚠️ Не потеряй код. Если потеряешь — восстановить можно только из JSON-файла.
+    </p>
+    <div class="modal-actions">
+      <button class="btn primary" id="closeCodeModal">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<div class="defense" id="defense">
+  <div class="defense-slide" id="defSlide"></div>
+  <div class="defense-footer">
+    <div id="defLabel">VolVoxPro · режим защиты</div>
+    <div class="defense-nav">
+      <button id="defPrev">←</button>
+      <span id="defCounter" style="padding:8px 12px">1 / 1</span>
+      <button id="defNext">→</button>
+      <button id="defExit">Esc</button>
+    </div>
+  </div>
+</div>
+
+<div class="pdf-viewer" id="pdfViewer">
+  <div class="pdf-header">
+    <div class="left">
+      <div class="icon-box" id="pdfIcon">📄</div>
+      <div class="title-wrap"><b id="pdfTitle">Материал</b><small id="pdfMeta">PDF</small></div>
+    </div>
+    <div class="right">
+      <button class="btn sm" id="pdfReadToggle">✓ Прочитано</button>
+      <button class="btn sm" id="pdfDownload">⬇ Скачать</button>
+      <button class="btn sm" id="pdfFullscreen">⛶ Во весь экран</button>
+      <button class="btn sm primary" id="pdfClose">✕ Закрыть</button>
+    </div>
+  </div>
+  <div class="pdf-frame-wrap">
+    <iframe class="pdf-frame" id="pdfFrame" title="PDF"></iframe>
+    <div class="pdf-placeholder" id="pdfPlaceholder">
+      <div class="big">📭</div>
+      <div><b style="color:var(--text);font-size:15px">Файл не найден</b></div>
+      <div id="pdfExpectedPath" style="font-family:monospace;font-size:12px;color:#8bbcff"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ FIREBASE ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDYMRnSc1WQF5-LYF8r0OJjtoCwaro1e8w",
+  authDomain: "volvoxpro2.firebaseapp.com",
+  projectId: "volvoxpro2",
+  storageBucket: "volvoxpro2.firebasestorage.app",
+  messagingSenderId: "337993729223",
+  appId: "1:337993729223:web:5b445525869a97fdaaaa2e",
+  measurementId: "G-HX0T0VB1P3"
+};
+let fbApp=null, fbAuth=null, fbDb=null, fbUser=null, fbReady=false, fbError=null;
+function initFirebase(){
+  if(typeof firebase === 'undefined'){ fbError='Firebase SDK не загрузился'; return; }
+  try{
+    fbApp = firebase.initializeApp(firebaseConfig);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+    fbAuth.onAuthStateChanged(u => {
+      fbUser = u; fbReady = !!u;
+      if(state.section === 'cloud') renderMain();
+    });
+    fbAuth.signInAnonymously().catch(e => { fbError = e.message; });
+  }catch(e){ fbError = e.message; }
+}
+
+/* ============ КОНСТАНТЫ ============ */
+const LS_KEY='volvoxpro';
+const SCHEMA=9;
+const MEMBER_COLORS=['#4f8cff','#22c55e','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
+const MENTOR_PASSWORD='14091987';
+const MENTOR_AUTH_KEY='volvoxpro_mentor_auth';
+const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH=6;
+
+const MATERIALS=[
+  {id:'m1',title:'Какими бывают проекты',desc:'Кейс, исследовательский, коммерческий, некоммерческий.',icon:'📊',color:'#4f8cff',color2:'#7bb0ff',file:'docs/project-types.pdf',pages:8,tag:'Основы'},
+  {id:'m2',title:'О проектной карте',desc:'Как ставить цель, задачи, этапы, актуальность.',icon:'📋',color:'#22c55e',color2:'#5ee89a',file:'docs/project-card.pdf',pages:6,tag:'Документы'},
+  {id:'m3',title:'Работа в команде',desc:'Роли по Белбину, коммуникация, обратная связь.',icon:'👥',color:'#a855f7',color2:'#c88bff',file:'docs/team-roles.pdf',pages:21,tag:'Команда'},
+  {id:'m4',title:'Схема «Да-нетка»',desc:'Как понять, что ты действительно делаешь проект.',icon:'✅',color:'#f59e0b',color2:'#fbbf24',file:'docs/yes-no-scheme.pdf',pages:2,tag:'Проверка'},
+  {id:'m5',title:'Целеполагание',desc:'Что такое цель, SMART, формула красивой цели.',icon:'🎯',color:'#ef4444',color2:'#f87171',file:'docs/goal-setting.pdf',pages:13,tag:'Цели'},
+  {id:'m6',title:'Что такое проблема проекта',desc:'Как найти, обосновать и связать с решением.',icon:'🔍',color:'#06b6d4',color2:'#22d3ee',file:'docs/project-problem.pdf',pages:11,tag:'Исследование'}
+];
+let customMaterials=[];
+
+function allMaterials(){
+  const hidden = (state && Array.isArray(state.hiddenMaterials)) ? state.hiddenMaterials : [];
+  const seen = new Set(MATERIALS.map(m => m.file));
+  const remote = (typeof window.__ghGetRemoteMaterials === 'function' ? window.__ghGetRemoteMaterials() : []).filter(m => !seen.has(m.file));
+  return [...MATERIALS, ...remote, ...customMaterials].filter(m => !hidden.includes(m.id));
+}
+function allMaterialsIncludingHidden(){
+  const seen = new Set(MATERIALS.map(m => m.file));
+  const remote = (typeof window.__ghGetRemoteMaterials === 'function' ? window.__ghGetRemoteMaterials() : []).filter(m => !seen.has(m.file));
+  return [...MATERIALS, ...remote, ...customMaterials];
+}
+function materialTags(){ return ['Все', ...new Set(allMaterials().map(m => m.tag))]; }
+
+const PROJECT_CARD_FIELDS=[
+  {key:'name',label:'Название проекта',ph:'Краткое рабочее название'},
+  {key:'participants',label:'Авторы и участники',ph:'ФИО, класс, роль'},
+  {key:'description',label:'Краткое описание',ph:'1–2 абзаца'},
+  {key:'relevance',label:'Актуальность',ph:'Почему тема важна'},
+  {key:'goal',label:'Цель',ph:'Одна конкретная цель'},
+  {key:'stages',label:'Этапы работы',ph:'1) … 2) …'},
+  {key:'problem',label:'Проблема',ph:'Что именно не так'},
+  {key:'analogs',label:'Аналоги и прототипы',ph:'Существующие решения'},
+  {key:'purpose',label:'Назначение',ph:'Для кого и зачем'},
+  {key:'tasks',label:'Задачи',ph:'Список задач'},
+  {key:'stakeholders',label:'Заинтересованные стороны',ph:'Заказчик, пользователи'},
+  {key:'techSpecs',label:'Технические характеристики',ph:'Материалы, ПО'},
+  {key:'economics',label:'Экономика проекта',ph:'Себестоимость'},
+  {key:'results',label:'Ожидаемые результаты',ph:'Продукт, эффект'},
+  {key:'contacts',label:'Контакты',ph:'Наставник, почта'}
+];
+const DEFAULT_STAGES=['Проблематизация','Целеполагание','Исследование','Прототип','Тестирование','Доработка','Защита проекта'];
+const TEMPLATES={
+  research:{icon:'🔬',name:'Исследовательский',desc:'Гипотеза, эксперимент, выводы.',
+    stages:['Проблематизация','Обзор литературы','Гипотеза','Методика','Эксперимент','Анализ','Выводы','Защита'],
+    tasks:{todo:['Сформулировать гипотезу','Собрать установку','Провести замеры','Обработать данные'],doing:[],done:[]}},
+  engineering:{icon:'⚙️',name:'Инженерный',desc:'Прототип, испытания, доработка.',
+    stages:['Проблематизация','Целеполагание','ТЗ','Проектирование','Сборка','Испытания','Доработка','Защита'],
+    tasks:{todo:['Разработать ТЗ','Спроектировать узлы','Собрать прототип','Провести испытания'],doing:[],done:[]}},
+  it:{icon:'💻',name:'IT-продукт',desc:'Приложение, бот, сайт.',
+    stages:['Проблематизация','Целеполагание','Проектирование','MVP','Тестирование','Релиз','Поддержка','Защита'],
+    tasks:{todo:['Определить стек','Спроектировать БД','Разработать MVP','Протестировать'],doing:[],done:[]}},
+  social:{icon:'🤝',name:'Социальный',desc:'Изменение практики, вовлечение.',
+    stages:['Проблематизация','Исследование аудитории','Концепция','Пилот','Оценка эффекта','Масштабирование','Защита'],
+    tasks:{todo:['Провести опрос','Определить аудиторию','Разработать концепцию','Запустить пилот'],doing:[],done:[]}}
+};
+const ASSESSMENT_CRITERIA=[
+  {id:'relevance',name:'Актуальность',hint:'Проблема действительно важна'},
+  {id:'novelty',name:'Новизна',hint:'Отличия от существующих решений'},
+  {id:'depth',name:'Глубина проработки',hint:'Исследование, ТЗ, детали'},
+  {id:'proto',name:'Качество прототипа',hint:'Работоспособность, надёжность'},
+  {id:'present',name:'Презентация',hint:'Ясность, структура'},
+  {id:'result',name:'Результат',hint:'Продукт, эффект, метрики'}
+];
+const ASSESS_LEVELS=[
+  {v:0,label:'— не оценено'},{v:1,label:'1 — слабо'},{v:2,label:'2 — есть над чем работать'},
+  {v:3,label:'3 — приемлемо'},{v:4,label:'4 — хорошо'},{v:5,label:'5 — отлично'}
+];
+const IDEA_LIBRARY=[
+  {id:'gis1',cat:'ГИС',title:'Карта экологических проблем района',desc:'Собрать точки загрязнений и нанести на карту.',diff:'средний',tags:['QGIS','экология']},
+  {id:'gis2',cat:'ГИС',title:'Маршрут школьного туризма с GPS',desc:'Проложить маршрут, записать треки.',diff:'лёгкий',tags:['GPS','туризм']},
+  {id:'bio1',cat:'Биология/Химия',title:'Качество воды в местных водоёмах',desc:'Отбор проб, анализ pH, нитратов.',diff:'средний',tags:['химия','экология']},
+  {id:'bio2',cat:'Биология/Химия',title:'Микрозелень: влияние света',desc:'Разные спектры, замер биомассы.',diff:'лёгкий',tags:['биология']},
+  {id:'aero1',cat:'Аэро',title:'Квадрокоптер для мониторинга посевов',desc:'Аэросъёмка, NDVI, карта поля.',diff:'сложный',tags:['дрон','NDVI']},
+  {id:'aero2',cat:'Аэро',title:'Дрон-доставщик малых грузов',desc:'Прототип сброса груза в точке.',diff:'средний',tags:['доставка']},
+  {id:'ship1',cat:'Судомоделирование',title:'Катамаран на солнечных панелях',desc:'Расчёт корпуса, тесты на воде.',diff:'средний',tags:['солнце']},
+  {id:'design1',cat:'Промышленный дизайн',title:'Эргономичный органайзер',desc:'Скетчи, 3D-модель, прототип.',diff:'лёгкий',tags:['3D-печать']},
+  {id:'vr1',cat:'VR/AR',title:'VR-тур по школьному музею',desc:'Панорамная съёмка, аудиогид.',diff:'средний',tags:['VR','музей']},
+  {id:'vr2',cat:'VR/AR',title:'AR-приложение для анатомии',desc:'Маркеры, 3D-модели, quiz.',diff:'сложный',tags:['AR','биология']},
+  {id:'robo1',cat:'Робототехника',title:'Робот-сортировщик мусора',desc:'Конвейер, датчики, манипулятор.',diff:'сложный',tags:['манипулятор']},
+  {id:'robo2',cat:'Робототехника',title:'Автоматизированная теплица',desc:'Датчики, автополив, панель.',diff:'средний',tags:['IoT']},
+  {id:'cosmo1',cat:'Космо',title:'Модель спутника с датчиками',desc:'CubeSat, телеметрия.',diff:'сложный',tags:['кубсат']},
+  {id:'cosmo2',cat:'Космо',title:'Ракета с водяным двигателем',desc:'Расчёт сопла, тесты.',diff:'средний',tags:['ракета']},
+  {id:'it1',cat:'IT',title:'Telegram-бот для расписания',desc:'Парсинг расписания, уведомления.',diff:'средний',tags:['бот']},
+  {id:'it2',cat:'IT',title:'Веб-трекер для учёбы',desc:'Задачи, дедлайны, статистика.',diff:'средний',tags:['web']}
+];
+const IDEA_CATEGORIES=[...new Set(IDEA_LIBRARY.map(i => i.cat))];
+
+/* ============ СОСТОЯНИЕ ============ */
+function defaultState(){
+  return {
+    version: SCHEMA, section:'ideas', projectTab:'overview',
+    ideaFilter:'Все', materialFilter:'Все', theme:'dark',
+    onboarded:false, mentorMode:false, templateId:null,
+    project:{},
+    stages: DEFAULT_STAGES.map((label,i)=>({id:'s'+i,label,done:false,start:'',end:'',tasks:[],result:''})),
+    reflection:[], assessment:{},
+    kanban:{todo:[],doing:[],done:[]}, taskLog:[], team:[],
+    journal:[], resources:[], brainstorm:[],
+    eisen:{q1:[],q2:[],q3:[],q4:[]}, gantt:[],
+    ishi:{people:'',methods:'',machines:'',materials:'',measurement:'',environment:''},
+    smart:{s:'',m:'',a:'',r:'',t:''},
+    pomo:{sessions:[],focusTaskId:null},
+    history:[], mentorComments:{}, materialsRead:[], hiddenMaterials:[],
+    cloudCode:null, cloudOwnerUid:null, cloudUpdatedAt:null,
+    _autobackup:false, _lastBackup:null, lastSaved:null
+  };
+}
+function migrate(raw){
+  if(!raw) return defaultState();
+  const def = defaultState();
+  const out = Object.assign({}, def, raw);
+  delete out.ai;
+  out.kanban = Object.assign({}, def.kanban, raw.kanban||{});
+  out.eisen = Object.assign({}, def.eisen, raw.eisen||{});
+  out.ishi = Object.assign({}, def.ishi, raw.ishi||{});
+  out.smart = Object.assign({}, def.smart, raw.smart||{});
+  out.pomo = Object.assign({}, def.pomo, raw.pomo||{});
+  if(!Array.isArray(out.materialsRead)) out.materialsRead=[];
+  if(!Array.isArray(out.hiddenMaterials)) out.hiddenMaterials=[];
+  if(Array.isArray(out.stages) && out.stages.length){
+    out.stages = out.stages.map(s => ({
+      id:s.id||uid(), label:s.label||'', done:!!s.done,
+      start:s.start||'', end:s.end||'',
+      tasks: Array.isArray(s.tasks) ? s.tasks.map(t=>({id:t.id||uid(), text:t.text||''})) : [],
+      result:s.result||''
+    }));
+  } else {
+    out.stages = DEFAULT_STAGES.map((label,i)=>({id:'s'+i,label,done:false,start:'',end:'',tasks:[],result:''}));
+  }
+  if(Array.isArray(out.team)){
+    out.team = out.team.map((m,i)=>({
+      id:m.id||uid(), name:m.name||'', role:m.role||'',
+      color:m.color||MEMBER_COLORS[i%MEMBER_COLORS.length],
+      organization:m.organization||'', klass:m.klass||'', contacts:m.contacts||''
+    }));
+  }
+  out.version = SCHEMA;
+  return out;
+}
+let state = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    return migrate(raw ? JSON.parse(raw) : null);
+  }catch(e){ return defaultState(); }
+}
+let _saveTimer=null;
+function save(){
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(doSave, 250);
+}
+function doSave(){
+  try{
+    state.lastSaved = Date.now();
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const el = document.getElementById('saveTime');
+    if(el) el.textContent = 'Сохранено ' + new Date().toLocaleTimeString('ru-RU');
+  }catch(e){ toast('Не удалось сохранить: ' + e.message, true); }
+}
+const UNDO=[]; const UNDO_MAX=50;
+function snapshot(){
+  try{
+    const clone = JSON.parse(JSON.stringify(state));
+    clone.history = [];
+    UNDO.push(clone);
+    if(UNDO.length > UNDO_MAX) UNDO.shift();
+  }catch(e){}
+}
+function undo(){
+  if(!UNDO.length) return toast('Нечего отменять', true);
+  const prev = UNDO.pop();
+  const keep = state.history;
+  state = migrate(prev); state.history = keep;
+  save(); renderNav(); renderMain();
+  toast('Отменено');
+}
+function takeHistorySnapshot(label){
+  const clone = JSON.parse(JSON.stringify(state));
+  clone.history = [];
+  state.history.unshift({ts:Date.now(), label:label||'снимок', data:clone});
+  state.history = state.history.slice(0,20);
+  save();
+}
+
+/* ============ INDEXEDDB ============ */
+const IDB_NAME='volvoxpro_files', IDB_VERSION=1, IDB_STORE='materials';
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE,{keyPath:'id'});
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function idbPut(item){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(item);
+    tx.oncomplete = ()=>res(); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function idbGetAll(){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readonly');
+    const req = tx.objectStore(IDB_STORE).getAll();
+    req.onsuccess = ()=>res(req.result||[]); req.onerror = ()=>rej(req.error);
+  });
+}
+async function idbGet(id){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readonly');
+    const req = tx.objectStore(IDB_STORE).get(id);
+    req.onsuccess = ()=>res(req.result); req.onerror = ()=>rej(req.error);
+  });
+}
+async function idbDelete(id){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete = ()=>res(); tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function loadCustomMaterials(){
+  try{
+    const items = await idbGetAll();
+    customMaterials = items.filter(it=>it && it.id && it.blob).map(it=>({
+      id:it.id, title:it.title||'Без названия', desc:it.desc||'', tag:it.tag||'Свои',
+      icon:it.icon||'📄', color:it.color||'#4f8cff', color2:it.color2||'#7bb0ff',
+      pages:it.pages||0, filename:it.filename||'file.pdf', size:it.size||0,
+      createdAt:it.createdAt||0, isCustom:true
+    })).sort((a,b)=>b.createdAt-a.createdAt);
+  }catch(e){ customMaterials=[]; }
+}
+
+/* ============ ХЕЛПЕРЫ ============ */
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,9);
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg, isErr=false){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+function fmtDate(d=new Date()){ return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtRuDate(iso){
+  if(!iso) return '';
+  try{ const d=new Date(iso); return isNaN(d) ? iso : d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+  catch(e){ return iso; }
+}
+function fmtTime(ts){ return new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function fmtSize(b){
+  if(!b && b!==0) return '';
+  if(b<1024) return b+' Б';
+  if(b<1024*1024) return (b/1024).toFixed(1)+' КБ';
+  return (b/1024/1024).toFixed(2)+' МБ';
+}
+function dayKey(d){ return new Date(d).toISOString().slice(0,10); }
+function download(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+function memberColor(m){ return m ? (m.color||MEMBER_COLORS[0]) : '#555'; }
+function findTask(id){
+  for(const k in state.kanban){
+    const t = state.kanban[k].find(x=>x.id===id);
+    if(t) return {t, col:k};
+  }
+  return null;
+}
+function allTasks(){ return ['todo','doing','done'].flatMap(k=>state.kanban[k].map(t=>({...t, col:k}))); }
+function safeFilename(s){ return (s||'проект').replace(/[^\wа-яёА-ЯЁ\-\s]/gi,'').replace(/\s+/g,'_').slice(0,60); }
+
+/* ============ CLOUD ============ */
+function genCode(){
+  let out='';
+  for(let i=0;i<CODE_LENGTH;i++) out += CODE_CHARS.charAt(Math.floor(Math.random()*CODE_CHARS.length));
+  return out;
+}
+async function generateUniqueCode(){
+  for(let i=0;i<6;i++){
+    const code = genCode();
+    const doc = await fbDb.collection('saves').doc(code).get();
+    if(!doc.exists) return code;
+  }
+  throw new Error('Не удалось создать уникальный код');
+}
+async function saveToCloud(){
+  if(!fbReady || !fbUser) throw new Error('Облако не готово. Подожди пару секунд.');
+  let code = state.cloudCode;
+  if(!code) code = await generateUniqueCode();
+  const payload = {
+    data: JSON.parse(JSON.stringify(state)),
+    ownerUid: fbUser.uid,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  delete payload.data.cloudCode;
+  delete payload.data.cloudOwnerUid;
+  delete payload.data.cloudUpdatedAt;
+  delete payload.data.history;
+  const ref = fbDb.collection('saves').doc(code);
+  const snap = await ref.get();
+  if(snap.exists){
+    if(snap.data().ownerUid !== fbUser.uid) throw new Error('Этот код занят другим пользователем.');
+    await ref.update(payload);
+  } else {
+    payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    await ref.set(payload);
+  }
+  state.cloudCode = code;
+  state.cloudOwnerUid = fbUser.uid;
+  state.cloudUpdatedAt = Date.now();
+  save();
+  return code;
+}
+async function loadFromCloud(code){
+  if(!fbReady || !fbUser) throw new Error('Облако не готово.');
+  const ref = fbDb.collection('saves').doc(code);
+  const snap = await ref.get();
+  if(!snap.exists) throw new Error('Код не найден');
+  const d = snap.data();
+  if(d.ownerUid !== fbUser.uid) throw new Error('Это чужое сохранение');
+  if(!d.data) throw new Error('В сохранении нет данных');
+  return d.data;
+}
+
+/* ============ NAV ============ */
+const NAV=[
+  {id:'ideas',icon:'💡',label:'Идеи'},
+  {id:'materials',icon:'📚',label:'Инфа сотка'},
+  {id:'project',icon:'📁',label:'Проект'},
+  {id:'analytics',icon:'📈',label:'Аналитика'},
+  {id:'board',icon:'👥',label:'Доска'},
+  {id:'tools',icon:'🧰',label:'Инструменты'},
+  {id:'cloud',icon:'☁️',label:'Облако'},
+  {id:'export',icon:'⬇️',label:'Экспорт'}
+];
+function renderNav(){
+  const nav = $('#nav');
+  nav.innerHTML = `<div class="nav-title">Работа</div>` +
+    NAV.map(n=>`<div class="nav-item ${state.section===n.id?'active':''}" data-nav="${n.id}" title="${n.label}">
+      <span class="ic">${n.icon}</span>${n.label}</div>`).join('');
+  $$('.nav-item', nav).forEach(el=>{
+    el.onclick = ()=>{ state.section = el.dataset.nav; save(); renderNav(); renderMain(); };
+  });
+}
+function renderMain(){
+  const main = $('#main');
+  main.scrollTop = 0;
+  switch(state.section){
+    case 'ideas': renderIdeas(main); break;
+    case 'materials': renderMaterials(main); break;
+    case 'project': renderProject(main); break;
+    case 'analytics': renderAnalytics(main); break;
+    case 'board': renderBoard(main); break;
+    case 'tools': renderTools(main); break;
+    case 'cloud': renderCloud(main); break;
+    case 'export': renderExport(main); break;
+  }
+}
+
+/* ============ CLOUD UI ============ */
+function renderCloud(main){
+  const hasCode = !!state.cloudCode;
+  let statusHtml = '';
+  if(fbError){
+    statusHtml = `<div class="cloud-status err"><span class="dot2"></span>Ошибка Firebase: ${esc(fbError)}</div>`;
+  } else if(!fbReady){
+    statusHtml = `<div class="cloud-status wait"><span class="dot2"></span>Подключаюсь к облаку…</div>`;
+  } else {
+    statusHtml = `<div class="cloud-status ok"><span class="dot2"></span>Облако готово. Можно сохранять.</div>`;
+  }
+  main.innerHTML = `
+    <h1 class="page-title">☁️ Облако</h1>
+    <p class="page-sub">Сохрани прогресс в облако и продолжи на другом устройстве.</p>
+    ${statusHtml}
+    ${hasCode ? `
+      <div class="cloud-hero">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px">Твой код сохранения</div>
+        <div class="cloud-code" id="currentCode">${esc(state.cloudCode)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn primary" id="cloudSaveBtn">🔄 Обновить в облаке</button>
+          <button class="btn" id="cloudCopyBtn">📋 Скопировать код</button>
+          <button class="btn" id="cloudUnlinkBtn">🔓 Отвязать</button>
+        </div>
+        ${state.cloudUpdatedAt?`<p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Последнее сохранение: ${fmtTime(state.cloudUpdatedAt)}</p>`:''}
+      </div>
+    ` : `
+      <div class="cloud-hero">
+        <h3 style="font-size:16px;margin-bottom:8px">Ещё нет сохранения в облаке</h3>
+        <p class="muted" style="font-size:13px;margin-bottom:16px;line-height:1.6">
+          Нажми «Сохранить в облако» — приложение сгенерирует короткий код.
+          Запиши его. По этому коду можно загрузить прогресс на другом устройстве.
+        </p>
+        <div style="display:flex;justify-content:center">
+          <button class="btn primary big" id="cloudSaveBtn">☁️ Сохранить в облако</button>
+        </div>
+      </div>
+    `}
+    <div class="card">
+      <h3>📥 Загрузить из облака</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px">Введи код с другого устройства. Текущий прогресс будет заменён.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="quickLoadCode" placeholder="XXXXXX" maxlength="6" autocomplete="off"
+          style="flex:1;min-width:200px;font-family:'Courier New',monospace;font-size:18px;letter-spacing:3px;text-transform:uppercase;text-align:center">
+        <button class="btn primary" id="quickLoadBtn">Загрузить</button>
+      </div>
+      <div id="quickLoadStatus" style="display:none;margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h3>💾 Резервная копия</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px">Если потеряешь код — восстановить можно только из файла.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="cloudExportFile">📤 Скачать JSON</button>
+        <label class="btn" style="cursor:pointer">📥 Загрузить из файла
+          <input type="file" id="cloudImportFile" accept=".json" style="display:none"></label>
+      </div>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,rgba(245,158,11,.06),transparent);border-color:#7a622b">
+      <h3>⚠️ Важно</h3>
+      <ul class="muted" style="font-size:12.5px;line-height:1.8;padding-left:20px">
+        <li><b>Код — это ключ.</b> Не передавай незнакомым.</li>
+        <li><b>Данные в облаке — только твои.</b> Другой человек с тем же кодом не сможет открыть их — Firebase проверяет владельца.</li>
+        <li><b>Если потерял код</b> — прогресс из облака не восстановить. Но можно загрузить локальный или JSON.</li>
+        <li><b>С двух устройств одновременно</b> — сохраняй по очереди.</li>
+      </ul>
+    </div>
+  `;
+  const saveBtn = $('#cloudSaveBtn', main);
+  if(saveBtn) saveBtn.onclick = ()=>doCloudSave(saveBtn);
+  const copyBtn = $('#cloudCopyBtn', main);
+  if(copyBtn) copyBtn.onclick = ()=>{ copyToClipboard(state.cloudCode); toast('Код скопирован'); };
+  const unlinkBtn = $('#cloudUnlinkBtn', main);
+  if(unlinkBtn) unlinkBtn.onclick = ()=>{
+    if(!confirm('Отвязать код? Данные в облаке останутся, но это устройство забудет код.')) return;
+    state.cloudCode = null; state.cloudOwnerUid = null; state.cloudUpdatedAt = null;
+    save(); renderCloud(main); toast('Код отвязан');
+  };
+  const loadBtn = $('#quickLoadBtn', main);
+  if(loadBtn) loadBtn.onclick = ()=>doCloudLoad(main);
+  const quickInput = $('#quickLoadCode', main);
+  if(quickInput) quickInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doCloudLoad(main); });
+  const expBtn = $('#cloudExportFile', main);
+  if(expBtn) expBtn.onclick = ()=>exportToFile();
+  const impInput = $('#cloudImportFile', main);
+  if(impInput) impInput.onchange = async (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const data = await importFromFile(f);
+      if(!confirm('Заменить текущий прогресс?')) return;
+      state = migrate(data); save(); renderNav(); renderMain();
+      toast('Загружено из файла');
+    }catch(err){ toast('Ошибка: '+err.message, true); }
+  };
+}
+async function doCloudSave(btn){
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="cloud-spinner"></span> Сохраняю…';
+  try{
+    const code = await saveToCloud();
+    toast('Сохранено в облако');
+    $('#newCodeDisplay').textContent = code;
+    $('#codeShowModal').classList.add('show');
+    $('#copyCodeBtn').onclick = ()=>{ copyToClipboard(code); toast('Код скопирован'); };
+    $('#downloadCodeBtn').onclick = ()=>exportToFile();
+    $('#closeCodeModal').onclick = ()=>$('#codeShowModal').classList.remove('show');
+    renderCloud($('#main'));
+  }catch(e){
+    toast('Ошибка: '+e.message, true);
+    btn.disabled = false; btn.innerHTML = orig;
+  }
+}
+async function doCloudLoad(main){
+  const input = $('#quickLoadCode', main);
+  const status = $('#quickLoadStatus', main);
+  const code = (input.value||'').trim().toUpperCase();
+  if(code.length !== CODE_LENGTH){
+    status.style.display='block';
+    status.className='cloud-status err';
+    status.innerHTML='<span class="dot2"></span>Код должен состоять из 6 символов';
+    return;
+  }
+  status.style.display='block';
+  status.className='cloud-status wait';
+  status.innerHTML='<span class="cloud-spinner"></span> Загружаю…';
+  try{
+    const data = await loadFromCloud(code);
+    if(!confirm('Заменить текущий прогресс данными из облака?')) return;
+    state = migrate(data);
+    state.cloudCode = code;
+    state.cloudOwnerUid = fbUser.uid;
+    state.cloudUpdatedAt = Date.now();
+    save(); renderNav(); renderMain();
+    toast('Загружено из облака');
+  }catch(e){
+    status.className='cloud-status err';
+    status.innerHTML='<span class="dot2"></span>'+esc(e.message);
+  }
+}
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ============ ЭКСПОРТ / ИМПОРТ JSON ============ */
+function exportToFile(){
+  const data = JSON.parse(JSON.stringify(state));
+  delete data.history;
+  const json = JSON.stringify(data, null, 2);
+  download(new Blob([json], {type:'application/json'}), `volvoxpro-backup-${Date.now()}.json`);
+  toast('Файл скачан');
+}
+function importFromFile(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{ resolve(JSON.parse(e.target.result)); }
+      catch(err){ reject(new Error('Неверный формат JSON')); }
+    };
+    reader.onerror = ()=>reject(new Error('Ошибка чтения'));
+    reader.readAsText(file);
+  });
+}
+
+/* ============ WIZARD ============ */
+let wizState={step:0,tpl:null,name:'',goal:'',deadline:''};
+function openWizard(){
+  wizState = {step:0, tpl:state.templateId||null, name:state.project.name||'', goal:state.project.goal||'', deadline:''};
+  $('#wizard').classList.add('show');
+  renderWizard();
+}
+function closeWizard(){ $('#wizard').classList.remove('show'); }
+function renderWizard(){
+  const body = $('#wizBody');
+  const steps = $('#wizSteps');
+  steps.innerHTML = [0,1,2,3].map(i=>`<div class="wiz-step ${i===wizState.step?'active':i<wizState.step?'done':''}"></div>`).join('');
+  $('#wizBack').style.display = wizState.step>0 ? '' : 'none';
+  $('#wizNext').textContent = wizState.step===3 ? 'Готово' : 'Далее';
+  if(wizState.step===0){
+    body.innerHTML = `<h2>Добро пожаловать в VolVoxPro</h2>
+      <p class="sub">Пройдём 4 быстрых шага — и у тебя будет готовый каркас проекта.</p>
+      <div class="field"><label>Название проекта</label>
+        <input id="wizName" placeholder="Например: Дрон для мониторинга" value="${esc(wizState.name)}"></div>
+      <div class="field"><label>Цель в одном предложении</label>
+        <input id="wizGoal" placeholder="Разработать … чтобы …" value="${esc(wizState.goal)}"></div>
+      <div class="field"><label>Ориентировочный дедлайн</label>
+        <input type="date" id="wizDeadline" value="${esc(wizState.deadline)}"></div>`;
+  } else if(wizState.step===1){
+    body.innerHTML = `<h2>Тип проекта</h2>
+      <p class="sub">От этого зависят этапы и стартовый набор задач.</p>
+      <div class="tpl-grid">${Object.entries(TEMPLATES).map(([id,t])=>`<div class="tpl ${wizState.tpl===id?'sel':''}" data-tpl="${id}">
+        <div class="big">${t.icon}</div><h4>${t.name}</h4><p>${t.desc}</p></div>`).join('')}</div>`;
+    $$('.tpl', body).forEach(el=>el.onclick = ()=>{ wizState.tpl = el.dataset.tpl; renderWizard(); });
+  } else if(wizState.step===2){
+    const t = wizState.tpl ? TEMPLATES[wizState.tpl] : TEMPLATES.engineering;
+    body.innerHTML = `<h2>Что будет в проекте</h2>
+      <p class="sub">Можно поменять потом.</p>
+      <div class="card"><h3>Этапы (${t.stages.length})</h3>
+        <ol style="padding-left:22px;font-size:13.5px;line-height:1.9;color:var(--muted)">
+          ${t.stages.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>
+      <div class="card"><h3>Стартовые задачи</h3>
+        <ul style="padding-left:22px;font-size:13.5px;line-height:1.9;color:var(--muted)">
+          ${t.tasks.todo.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`;
+  } else {
+    body.innerHTML = `<h2>Почти всё</h2>
+      <p class="sub">Проверь и нажми «Готово».</p>
+      <div class="card">
+        <div class="kv"><span class="muted">Название</span><b>${esc(wizState.name||'—')}</b></div>
+        <div class="kv"><span class="muted">Цель</span><b>${esc(wizState.goal||'—')}</b></div>
+        <div class="kv"><span class="muted">Тип</span><b>${wizState.tpl ? TEMPLATES[wizState.tpl].name : '—'}</b></div>
+      </div>`;
+  }
+  ['wizName','wizGoal','wizDeadline'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.oninput = ()=>{
+      if(id==='wizName') wizState.name = el.value;
+      if(id==='wizGoal') wizState.goal = el.value;
+      if(id==='wizDeadline') wizState.deadline = el.value;
+    };
+  });
+}
+function applyWizard(){
+  snapshot();
+  const tpl = wizState.tpl ? TEMPLATES[wizState.tpl] : TEMPLATES.engineering;
+  state.templateId = wizState.tpl;
+  state.project.name = wizState.name || 'Новый проект';
+  state.project.goal = wizState.goal || '';
+  state.stages = tpl.stages.map((label,i)=>({id:'s'+i,label,done:false,start:'',end:'',tasks:[],result:''}));
+  state.kanban.todo = tpl.tasks.todo.map(text=>({id:uid(), text}));
+  state.kanban.doing = []; state.kanban.done = [];
+  state.onboarded = true;
+  save(); closeWizard();
+  state.section = 'project'; state.projectTab = 'overview';
+  renderNav(); renderMain();
+  toast('Проект создан!');
+}
+$('#wizSkip').onclick = ()=>{ state.onboarded = true; save(); closeWizard(); };
+$('#wizBack').onclick = ()=>{ wizState.step = Math.max(0, wizState.step-1); renderWizard(); };
+$('#wizNext').onclick = ()=>{
+  if(wizState.step===1 && !wizState.tpl) return toast('Выбери тип проекта', true);
+  if(wizState.step<3){ wizState.step++; renderWizard(); return; }
+  applyWizard();
+};
+
+/* ============ ИДЕИ ============ */
+function renderIdeas(main){
+  const cats = ['Все', ...IDEA_CATEGORIES];
+  const list = state.ideaFilter === 'Все' ? IDEA_LIBRARY : IDEA_LIBRARY.filter(i=>i.cat===state.ideaFilter);
+  main.innerHTML = `<h1 class="page-title">Библиотека идей</h1>
+    <p class="page-sub">${IDEA_LIBRARY.length} кейсов. Выбери направление или возьми идею в проект.</p>
+    <div class="filters">${cats.map(c=>`<div class="chip ${state.ideaFilter===c?'active':''}" data-cat="${esc(c)}">${esc(c)}</div>`).join('')}</div>
+    <div class="ideas-grid">${list.map(i=>`<div class="idea">
+      <h4>${esc(i.title)}</h4>
+      <div class="tags"><span class="pill b">${esc(i.cat)}</span>
+        <span class="pill ${i.diff==='лёгкий'?'g':i.diff==='средний'?'y':'r'}">${esc(i.diff)}</span></div>
+      <p>${esc(i.desc)}</p>
+      <div class="tags">${i.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join('')}</div>
+      <button class="btn primary sm" data-take="${i.id}">Взять в проект</button></div>`).join('')}</div>`;
+  $$('.chip', main).forEach(el=>el.onclick = ()=>{ state.ideaFilter = el.dataset.cat; save(); renderIdeas(main); });
+  $$('[data-take]', main).forEach(el=>el.onclick = ()=>{
+    const idea = IDEA_LIBRARY.find(i=>i.id===el.dataset.take);
+    if(!idea) return;
+    snapshot();
+    state.project.name = idea.title;
+    state.project.description = idea.desc;
+    if(!state.templateId){
+      const t = TEMPLATES.engineering;
+      state.stages = t.stages.map((label,i)=>({id:'s'+i,label,done:false,start:'',end:'',tasks:[],result:''}));
+      state.kanban.todo = t.tasks.todo.map(text=>({id:uid(), text}));
+    }
+    save();
+    state.section = 'project'; state.projectTab = 'overview';
+    renderNav(); renderMain();
+    toast('Идея добавлена');
+  });
+}
+
+/* ============ МАТЕРИАЛЫ ============ */
+function renderMaterials(main){
+  const tags = materialTags();
+  const all = allMaterials();
+  const list = state.materialFilter === 'Все' ? all : all.filter(m=>m.tag===state.materialFilter);
+  const readCount = state.materialsRead.filter(id=>all.some(m=>m.id===id)).length;
+  const pct = all.length ? Math.round(readCount/all.length*100) : 0;
+  const customCount = customMaterials.length;
+  const totalSize = customMaterials.reduce((s,m)=>s+(m.size||0),0);
+  const hiddenCount = (state.hiddenMaterials||[]).length;
+
+  main.innerHTML = `<h1 class="page-title">📚 Инфа сотка</h1>
+    <p class="page-sub">Материалы по методологии. Кликай по карточке — откроется просмотр.</p>
+    <div class="hero-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div><div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px">Прогресс изучения</div>
+        <h3 style="font-size:16px;margin-bottom:6px">Прочитано ${readCount} из ${all.length}</h3>
+        <div class="progress" style="width:280px;max-width:100%"><div style="width:${pct}%"></div></div></div>
+      <div style="font-size:38px;font-weight:700;color:var(--accent)">${pct}%</div></div></div>
+    <div class="filters">${tags.map(t=>`<div class="chip ${state.materialFilter===t?'active':''}" data-mtag="${esc(t)}">${esc(t)}</div>`).join('')}</div>
+    <div class="mat-grid">${list.length ? list.map(m=>{
+      const isRead = state.materialsRead.includes(m.id);
+      return `<div class="mat-card ${isRead?'read':''} ${m.isCustom?'custom':''}" data-mat="${esc(m.id)}">
+        <div class="mat-cover" style="background:linear-gradient(135deg,${m.color},${m.color2})">
+          <div class="pattern"></div>
+          <div class="big-emoji">${m.icon}</div>
+          ${m.pages?`<div class="pages-badge">${m.pages} стр.</div>`:''}
+          <div class="tag-badge">${esc(m.tag)}</div>
+          ${m.isCustom?`<div class="custom-badge">📤 Загружено</div>`:''}
+          ${m.isRemote?`<div class="custom-badge" style="background:rgba(34,197,94,.9)">☁️ GitHub</div>`:''}
+          ${state.mentorMode?`<div class="del-mat-btn" data-delm="${esc(m.id)}" title="Удалить">🗑</div>`:''}
+          <div class="read-badge">✓ Прочитано</div>
+        </div>
+        <div class="mat-body"><h4>${esc(m.title)}</h4><p>${esc(m.desc||'Описание не задано')}</p>
+          <div class="open-hint">▶ Открыть материал</div></div></div>`;
+    }).join('') : '<div class="empty">Материалов нет</div>'}</div>
+    ${state.mentorMode ? renderMentorUploadBlock(customCount, totalSize, hiddenCount) : `
+      <div class="card" style="margin-top:22px;text-align:center">
+        <p class="muted" style="font-size:12.5px;line-height:1.6">
+          🎓 <b>Наставник:</b> включите менторский режим (кнопка внизу слева),
+          чтобы появилась форма загрузки и кнопки удаления.
+        </p>
+      </div>`}`;
+
+  $$('.chip', main).forEach(el=>el.onclick = ()=>{ state.materialFilter = el.dataset.mtag; save(); renderMaterials(main); });
+  $$('.mat-card', main).forEach(el=>el.onclick = (e)=>{
+    if(e.target.closest('.del-mat-btn')) return;
+    openPdf(el.dataset.mat);
+  });
+  $$('[data-delm]', main).forEach(el=>el.onclick = (e)=>{ e.stopPropagation(); removeMaterial(el.dataset.delm, main); });
+  if(state.mentorMode) bindMentorUploadBlock(main);
+}
+
+function renderMentorUploadBlock(customCount, totalSize, hiddenCount){
+  const allTags = [...new Set(allMaterials().map(m=>m.tag))];
+  return `<div class="card mentor-upload-card" id="mentorUploadCard">
+    <h3>🎓 Загрузка материалов (только ментор)
+      <span class="muted" style="font-size:12px">${customCount} локальных · ${fmtSize(totalSize)}</span></h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:14px;line-height:1.55">
+      Локальные файлы сохраняются в этом браузере. Для публикации на GitHub используй github-upload.js.
+    </p>
+    <div class="up-zone" id="upZone">
+      <input type="file" id="upFile" accept="application/pdf" style="display:none">
+      <div class="drop-hint" id="upDropHint">
+        <div class="big">📄</div>
+        <b>Перетащи PDF сюда или нажми, чтобы выбрать</b>
+        <small>Только PDF · до 50 МБ</small>
+      </div>
+    </div>
+    <div id="upFormWrap" style="display:none;margin-top:16px">
+      <div class="field"><label>Выбранный файл</label>
+        <div id="upFileName" class="muted" style="font-size:12.5px;padding:8px 10px;background:var(--bg3);border-radius:8px">—</div></div>
+      <div class="row c2">
+        <div class="field"><label>Название *</label><input id="upTitle" placeholder="Название"></div>
+        <div class="field"><label>Категория</label>
+          <input id="upTag" list="upTagList" placeholder="Например: Методология">
+          <datalist id="upTagList">${allTags.map(t=>`<option value="${esc(t)}"></option>`).join('')}</datalist></div>
+      </div>
+      <div class="field"><label>Описание</label><textarea id="upDesc" style="min-height:60px"></textarea></div>
+      <div class="row c3">
+        <div class="field"><label>Иконка</label><input id="upIcon" value="📄" maxlength="4"></div>
+        <div class="field"><label>Цвет обложки</label>
+          <select id="upColor">
+            <option value="#4f8cff,#7bb0ff">Синий</option>
+            <option value="#22c55e,#5ee89a">Зелёный</option>
+            <option value="#a855f7,#c88bff">Фиолетовый</option>
+            <option value="#f59e0b,#fbbf24">Жёлтый</option>
+            <option value="#ef4444,#f87171">Красный</option>
+            <option value="#06b6d4,#22d3ee">Бирюзовый</option>
+            <option value="#ec4899,#f9a8d4">Розовый</option>
+          </select></div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button class="btn primary" id="upSubmit" style="width:100%">📥 Сохранить только у меня</button></div>
+      </div>
+      <div id="upStatus" class="muted" style="font-size:12px"></div>
+    </div>
+    ${hiddenCount?`<div style="margin-top:16px;padding:12px 14px;background:var(--bg3);border-radius:9px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="muted" style="font-size:12.5px">Скрыто встроенных: <b>${hiddenCount}</b></span>
+      <button class="btn sm" id="restoreHidden">↩ Вернуть скрытые</button></div>`:''}
+    ${customCount?`<h3 style="margin-top:22px;font-size:14px">Загруженные материалы</h3>
+      ${customMaterials.map(m=>`<div class="kv"><span>${m.icon} <b>${esc(m.title)}</b>
+        <span class="muted" style="font-size:11.5px">· ${fmtSize(m.size)} · ${esc(m.tag)}</span></span>
+        <button class="btn danger sm" data-updel="${esc(m.id)}">Удалить</button></div>`).join('')}`:''}
+  </div>`;
+}
+
+function bindMentorUploadBlock(main){
+  const zone = $('#upZone', main);
+  const fileInput = $('#upFile', main);
+  const dropHint = $('#upDropHint', main);
+  const formWrap = $('#upFormWrap', main);
+  const fileNameEl = $('#upFileName', main);
+  const statusEl = $('#upStatus', main);
+  let pendingFile = null;
+
+  function pickFile(file){
+    if(!file) return;
+    if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return toast('Только PDF', true);
+    if(file.size > 50*1024*1024) return toast('Файл больше 50 МБ', true);
+    pendingFile = file;
+    fileNameEl.textContent = `${file.name} · ${fmtSize(file.size)}`;
+    formWrap.style.display = '';
+    const ti = $('#upTitle', main);
+    if(ti && !ti.value) ti.value = file.name.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ').trim();
+  }
+  if(dropHint) dropHint.onclick = ()=>fileInput.click();
+  if(fileInput) fileInput.onchange = ()=>pickFile(fileInput.files[0]);
+  if(zone){
+    ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev, e=>{ e.preventDefault(); zone.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(ev=>zone.addEventListener(ev, e=>{ e.preventDefault(); zone.classList.remove('drag'); }));
+    zone.addEventListener('drop', e=>{
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(f) pickFile(f);
+    });
+  }
+  const submitBtn = $('#upSubmit', main);
+  if(submitBtn) submitBtn.onclick = async ()=>{
+    if(!pendingFile) return toast('Сначала выбери PDF', true);
+    const title = $('#upTitle', main).value.trim();
+    if(!title) return toast('Укажи название', true);
+    const desc = $('#upDesc', main).value.trim();
+    const tag = ($('#upTag', main).value.trim()) || 'Свои';
+    const icon = ($('#upIcon', main).value.trim()) || '📄';
+    const colorPair = $('#upColor', main).value.split(',');
+    statusEl.textContent = 'Сохранение…';
+    try{
+      const id = 'user_' + uid();
+      await idbPut({id, blob:pendingFile, filename:pendingFile.name, title, desc, tag, icon,
+        color:colorPair[0], color2:colorPair[1]||colorPair[0], pages:0, size:pendingFile.size, createdAt:Date.now()});
+      snapshot();
+      await loadCustomMaterials();
+      toast('Материал загружен');
+      renderMaterials(main);
+    }catch(e){ statusEl.textContent=''; toast('Ошибка: '+e.message, true); }
+  };
+  const restoreBtn = $('#restoreHidden', main);
+  if(restoreBtn) restoreBtn.onclick = ()=>{
+    if(!state.hiddenMaterials || !state.hiddenMaterials.length) return toast('Нет скрытых');
+    snapshot();
+    const n = state.hiddenMaterials.length;
+    state.hiddenMaterials = [];
+    save(); renderMaterials(main);
+    toast(`Восстановлено: ${n}`);
+  };
+  $$('[data-updel]', main).forEach(el=>el.onclick = async ()=>{
+    if(!confirm('Удалить этот материал?')) return;
+    try{
+      const id = el.dataset.updel;
+      await idbDelete(id);
+      state.materialsRead = state.materialsRead.filter(x=>x!==id);
+      snapshot(); save();
+      await loadCustomMaterials();
+      renderMaterials(main);
+      toast('Удалено');
+    }catch(e){ toast('Ошибка: '+e.message, true); }
+  });
+}
+
+async function removeMaterial(id, main){
+  if(!state.mentorMode) return;
+  const m = allMaterialsIncludingHidden().find(x=>x.id===id);
+  if(!m) return;
+  if(m.isCustom){
+    if(!confirm(`Удалить «${m.title}» из этого браузера?`)) return;
+    try{
+      await idbDelete(id);
+      state.materialsRead = state.materialsRead.filter(x=>x!==id);
+      snapshot();
+      await loadCustomMaterials();
+      save(); renderMaterials(main);
+      toast('Удалено');
+    }catch(e){ toast('Ошибка: '+e.message, true); }
+    return;
+  }
+  if(m.isRemote){
+    if(!confirm(`Удалить «${m.title}» с GitHub?`)) return;
+    if(typeof window.__ghDeleteRemote !== 'function') return toast('github-upload.js не загружен', true);
+    try{
+      await window.__ghDeleteRemote(m._remoteId, main);
+      state.materialsRead = state.materialsRead.filter(x=>x!==id);
+      snapshot(); save();
+      setTimeout(()=>renderMaterials(main), 600);
+    }catch(e){ toast('Ошибка: '+e.message, true); }
+    return;
+  }
+  if(!confirm(`Скрыть «${m.title}»? Файл на GitHub остаётся.`)) return;
+  snapshot();
+  if(!state.hiddenMaterials.includes(id)) state.hiddenMaterials.push(id);
+  save(); renderMaterials(main);
+  toast('Материал скрыт');
+}
+
+/* ============ PDF VIEWER ============ */
+let currentPdfId = null;
+async function openPdf(id){
+  const m = allMaterials().find(x=>x.id===id) || allMaterialsIncludingHidden().find(x=>x.id===id);
+  if(!m) return;
+  currentPdfId = id;
+  $('#pdfIcon').textContent = m.icon;
+  $('#pdfIcon').style.background = `linear-gradient(135deg,${m.color},${m.color2})`;
+  $('#pdfTitle').textContent = m.title;
+  $('#pdfMeta').textContent = `${m.tag} · ${m.pages?m.pages+' стр. · ':''}${m.file||m.filename||''}`;
+  const frame = $('#pdfFrame');
+  const placeholder = $('#pdfPlaceholder');
+  placeholder.classList.remove('show');
+  if(frame.dataset.blobUrl){ URL.revokeObjectURL(frame.dataset.blobUrl); delete frame.dataset.blobUrl; }
+  if(m.isCustom){
+    try{
+      const item = await idbGet(id);
+      if(!item || !item.blob){
+        placeholder.classList.add('show');
+        $('#pdfExpectedPath').textContent = 'Файл не найден';
+        frame.src = 'about:blank';
+      } else {
+        const url = URL.createObjectURL(item.blob);
+        frame.dataset.blobUrl = url;
+        frame.src = url;
+      }
+    }catch(e){
+      placeholder.classList.add('show');
+      $('#pdfExpectedPath').textContent = 'Ошибка: '+e.message;
+    }
+  } else {
+    frame.src = m.file;
+    fetch(m.file, {method:'HEAD'}).then(r=>{
+      if(!r.ok){ placeholder.classList.add('show'); $('#pdfExpectedPath').textContent = 'Ожидаемый файл: '+m.file; frame.src='about:blank'; }
+    }).catch(()=>{
+      placeholder.classList.add('show');
+      $('#pdfExpectedPath').textContent = 'Ожидаемый файл: '+m.file;
+    });
+  }
+  updateReadButton();
+  $('#pdfViewer').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePdf(){
+  $('#pdfViewer').classList.remove('show');
+  const frame = $('#pdfFrame');
+  if(frame.dataset.blobUrl){ URL.revokeObjectURL(frame.dataset.blobUrl); delete frame.dataset.blobUrl; }
+  frame.src = 'about:blank';
+  currentPdfId = null;
+  document.body.style.overflow = '';
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+}
+function updateReadButton(){
+  const btn = $('#pdfReadToggle');
+  if(!currentPdfId) return;
+  const isRead = state.materialsRead.includes(currentPdfId);
+  btn.textContent = isRead ? '✓ Прочитано' : '✓ Отметить прочитанным';
+  btn.classList.toggle('success', isRead);
+}
+$('#pdfClose').onclick = closePdf;
+$('#pdfDownload').onclick = async ()=>{
+  if(!currentPdfId) return;
+  const m = allMaterials().find(x=>x.id===currentPdfId) || allMaterialsIncludingHidden().find(x=>x.id===currentPdfId);
+  if(!m) return;
+  if(m.isCustom){
+    const item = await idbGet(currentPdfId);
+    if(item && item.blob) download(item.blob, item.filename||'file.pdf');
+  } else {
+    const a = document.createElement('a');
+    a.href = m.file; a.download = '';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>a.remove(), 500);
+  }
+};
+$('#pdfFullscreen').onclick = ()=>{
+  const el = $('#pdfViewer');
+  if(document.fullscreenElement) document.exitFullscreen();
+  else if(el.requestFullscreen) el.requestFullscreen();
+};
+$('#pdfReadToggle').onclick = ()=>{
+  if(!currentPdfId) return;
+  snapshot();
+  const idx = state.materialsRead.indexOf(currentPdfId);
+  if(idx > -1){ state.materialsRead.splice(idx,1); toast('Отметка снята'); }
+  else { state.materialsRead.push(currentPdfId); toast('Отмечено прочитанным'); }
+  save(); updateReadButton();
+};
+
+/* ============ ПРОЕКТ ============ */
+function renderProject(main){
+  const tabs = [
+    {id:'overview',label:'Обзор'},{id:'card',label:'Карта'},{id:'stages',label:'Этапы'},
+    {id:'kanban',label:'Канбан'},{id:'team',label:'Команда'},{id:'journal',label:'Журнал'},
+    {id:'reflection',label:'Рефлексия'},{id:'assessment',label:'Самопроверка'},
+    {id:'resources',label:'Ресурсы'},{id:'history',label:'История'}
+  ];
+  main.innerHTML = `<h1 class="page-title">Мой проект
+      ${state.mentorMode?'<span class="badge" style="background:#3a2e12;color:#f0c66b">🎓 ментор</span>':''}</h1>
+    <p class="page-sub">${esc(state.project.name||'Название не задано')}</p>
+    ${state.mentorMode?'<div class="mentor-banner show"><span>🎓 Менторский режим включён</span></div>':''}
+    <div class="tabs">${tabs.map(t=>`<div class="tab ${state.projectTab===t.id?'active':''}" data-tab="${t.id}">${t.label}</div>`).join('')}</div>
+    <div id="projectBody"></div>`;
+  $$('.tab', main).forEach(el=>el.onclick = ()=>{ state.projectTab = el.dataset.tab; save(); renderProject(main); });
+  const body = $('#projectBody');
+  const fn = {overview:renderOverview, card:renderCard, stages:renderStages, kanban:renderKanban,
+    team:renderTeam, journal:renderJournal, reflection:renderReflection,
+    assessment:renderAssessment, resources:renderResources, history:renderHistory}[state.projectTab];
+  if(fn) fn(body);
+}
+
+function renderOverview(body){
+  const p = state.project;
+  const filled = PROJECT_CARD_FIELDS.filter(f=>(p[f.key]||'').trim()).length;
+  const progress = Math.round(filled/PROJECT_CARD_FIELDS.length*100);
+  const done = state.kanban.done.length;
+  const totalTasks = done + state.kanban.todo.length + state.kanban.doing.length;
+  const taskPct = totalTasks ? Math.round(done/totalTasks*100) : 0;
+  const stagesDone = state.stages.filter(s=>s.done).length;
+  const stagePct = state.stages.length ? Math.round(stagesDone/state.stages.length*100) : 0;
+  const asAvg = ASSESSMENT_CRITERIA.reduce((s,c)=>s+(state.assessment[c.id]?.value||0),0)/ASSESSMENT_CRITERIA.length;
+  const totalMats = allMaterials().length;
+  const matPct = totalMats ? Math.round(state.materialsRead.length/totalMats*100) : 0;
+  body.innerHTML = `
+    <div class="hero-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div><div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px">Официальный документ</div>
+        <h3 style="font-size:16px;margin-bottom:4px">Проектная карта Кванториума</h3>
+        <p class="muted" style="font-size:12.5px">Соберётся автоматически из данных проекта.</p></div>
+      <button class="btn primary big" id="ovCard">📋 Скачать</button></div></div>
+    <div class="row c4">
+      <div class="card"><h3>Карта</h3><div style="font-size:30px;font-weight:700;color:var(--accent)">${progress}%</div>
+        <p class="muted" style="font-size:12.5px;margin-top:6px">${filled} из ${PROJECT_CARD_FIELDS.length}</p>
+        <div class="progress" style="margin-top:10px"><div style="width:${progress}%"></div></div></div>
+      <div class="card"><h3>Этапы</h3><div style="font-size:30px;font-weight:700;color:var(--purple)">${stagePct}%</div>
+        <p class="muted" style="font-size:12.5px;margin-top:6px">${stagesDone} из ${state.stages.length}</p>
+        <div class="progress" style="margin-top:10px"><div style="width:${stagePct}%"></div></div></div>
+      <div class="card"><h3>Задачи</h3><div style="font-size:30px;font-weight:700;color:var(--accent2)">${taskPct}%</div>
+        <p class="muted" style="font-size:12.5px;margin-top:6px">${done} из ${totalTasks}</p>
+        <div class="progress" style="margin-top:10px"><div style="width:${taskPct}%"></div></div></div>
+      <div class="card"><h3>Материалы</h3><div style="font-size:30px;font-weight:700;color:var(--warn)">${matPct}%</div>
+        <p class="muted" style="font-size:12.5px;margin-top:6px">${state.materialsRead.length} из ${totalMats}</p>
+        <div class="progress" style="margin-top:10px"><div style="width:${matPct}%"></div></div></div>
+    </div>
+    <div class="card"><h3>${esc(p.name||'Без названия')} <button class="btn sm" id="ovEdit">Редактировать</button></h3>
+      <p class="muted" style="margin-bottom:12px">${esc(p.description||'Описание не добавлено')}</p>
+      ${p.goal?`<p style="font-size:13px"><b>Цель:</b> ${esc(p.goal)}</p>`:''}</div>
+    <div class="row c2">
+      <div class="card"><h3>Действия</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn primary" id="ovCard2">📋 Проектная карта</button>
+          <button class="btn" id="ovDefense">🎤 Режим «Защита»</button>
+          <button class="btn" id="ovPitch">⏱ Питч на 60 секунд</button>
+          <button class="btn" id="ovMaterials">📚 Инфа сотка</button>
+          <button class="btn" id="ovWizard">🪄 Мастер проекта</button>
+        </div></div>
+      <div class="card"><h3>Самопроверка ${asAvg.toFixed(1)}/5</h3>
+        <div class="progress" style="margin:8px 0 12px"><div style="width:${asAvg/5*100}%"></div></div>
+        <h3 style="font-size:13px">Последние записи журнала</h3>
+        ${state.journal.length ? state.journal.slice(-3).reverse().map(j=>`<div class="journal-entry" style="margin-bottom:8px">
+          <div class="journal-date">${esc(j.date)}</div><div class="journal-body"><b>${esc(j.title)}</b>${esc(j.text)}</div></div>`).join('') : '<div class="empty" style="padding:12px">Журнал пуст.</div>'}
+      </div></div>`;
+  $('#ovEdit',body).onclick = ()=>{ state.projectTab='card'; save(); renderProject($('#main')); };
+  $('#ovWizard',body).onclick = openWizard;
+  $('#ovDefense',body).onclick = openDefense;
+  $('#ovPitch',body).onclick = ()=>{ state.section='tools'; save(); renderNav(); renderMain(); };
+  $('#ovCard',body).onclick = exportProjectCard;
+  $('#ovCard2',body).onclick = exportProjectCard;
+  $('#ovMaterials',body).onclick = ()=>{ state.section='materials'; save(); renderNav(); renderMain(); };
+}
+
+function renderCard(body){
+  body.innerHTML = `<div class="card"><h3>Проектная карта</h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:16px">Заполни разделы своими словами. Это основа защиты.</p>
+    ${PROJECT_CARD_FIELDS.map(f=>{
+      const val = state.project[f.key]||'';
+      const mc = state.mentorComments['card:'+f.key];
+      return `<div class="field"><label style="display:flex;justify-content:space-between">
+        <span>${esc(f.label)}</span>
+        ${state.mentorMode?`<button class="btn sm ghost" data-mc="card:${f.key}">💬 Ментор</button>`:''}</label>
+        <textarea data-field="${f.key}" placeholder="${esc(f.ph)}">${esc(val)}</textarea>
+        ${mc?`<div class="mentor-note">🎓 ${esc(mc)}</div>`:''}</div>`;
+    }).join('')}</div>`;
+  $$('[data-field]', body).forEach(el=>{
+    let dirty = false;
+    el.onfocus = ()=>{ if(!dirty){ snapshot(); dirty = true; } };
+    el.oninput = ()=>{ state.project[el.dataset.field] = el.value; save(); };
+  });
+  $$('[data-mc]', body).forEach(el=>el.onclick = ()=>askMentorComment(el.dataset.mc));
+}
+function askMentorComment(key){
+  if(!state.mentorMode) return toast('Включи менторский режим', true);
+  const cur = state.mentorComments[key] || '';
+  const note = prompt('Комментарий ментора:', cur);
+  if(note === null) return;
+  snapshot();
+  if(note.trim()) state.mentorComments[key] = note.trim();
+  else delete state.mentorComments[key];
+  save(); renderProject($('#main'));
+}
+
+function renderStages(body){
+  const done = state.stages.filter(s=>s.done).length;
+  const pct = state.stages.length ? Math.round(done/state.stages.length*100) : 0;
+  body.innerHTML = `<div class="card"><h3>Этапы и задачи <span class="muted" style="font-size:12px">${done}/${state.stages.length}</span></h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:14px">Данные попадут в проектную карту (первые 4 этапа).</p>
+    <div class="progress" style="margin-bottom:14px"><div style="width:${pct}%"></div></div>
+    ${state.stages.map((s,idx)=>`<div class="stage-block">
+      <div class="stage ${s.done?'done':''}">
+        <div class="box" data-toggle="${s.id}">${s.done?'✓':''}</div>
+        <div class="label" contenteditable="true" data-edit="${s.id}">${esc(s.label)}</div>
+        <span class="badge">Этап ${idx+1}</span>
+        <button class="btn danger sm" data-sdel="${s.id}">×</button></div>
+      <div class="row c2" style="margin:12px 0 0 32px">
+        <div class="field" style="margin:0"><label>Срок от</label>
+          <input type="date" value="${esc(s.start||'')}" data-sdate="start" data-sid="${s.id}"></div>
+        <div class="field" style="margin:0"><label>Срок до</label>
+          <input type="date" value="${esc(s.end||'')}" data-sdate="end" data-sid="${s.id}"></div>
+      </div>
+      <div style="margin:12px 0 0 32px">
+        <label>Задачи этапа</label>
+        ${(s.tasks||[]).map((t,i)=>`<div class="stage-task">
+          <span class="muted" style="font-size:12px;min-width:26px">${idx+1}.${i+1}.</span>
+          <input value="${esc(t.text)}" data-stask data-sid="${s.id}" data-tid="${t.id}">
+          <button class="btn danger sm" data-staskdel="${s.id}:${t.id}">×</button></div>`).join('')}
+        <div class="add-task"><input placeholder="Новая задача…" data-staskinput="${s.id}">
+          <button class="btn primary sm" data-staskadd="${s.id}">+</button></div>
+      </div>
+      <div class="field" style="margin:12px 0 0 32px"><label>Планируемый результат</label>
+        <textarea data-sresult="${s.id}" style="min-height:52px">${esc(s.result||'')}</textarea></div>
+    </div>`).join('')}
+    <div style="display:flex;gap:6px;margin-top:16px">
+      <input id="newStage" placeholder="Новый этап…">
+      <button class="btn primary" id="addStage">+</button></div>
+  </div>`;
+  $$('[data-toggle]', body).forEach(el=>el.onclick = ()=>{
+    snapshot();
+    const s = state.stages.find(x=>x.id===el.dataset.toggle);
+    if(s){ s.done = !s.done; save(); renderStages(body); }
+  });
+  $$('[data-edit]', body).forEach(el=>el.onblur = ()=>{
+    const s = state.stages.find(x=>x.id===el.dataset.edit);
+    if(s && s.label !== el.textContent){ snapshot(); s.label = el.textContent; save(); }
+  });
+  $$('[data-sdel]', body).forEach(el=>el.onclick = ()=>{
+    snapshot(); state.stages = state.stages.filter(x=>x.id!==el.dataset.sdel); save(); renderStages(body);
+  });
+  $$('[data-sdate]', body).forEach(el=>el.onchange = ()=>{
+    const s = state.stages.find(x=>x.id===el.dataset.sid);
+    if(s){ s[el.dataset.sdate] = el.value; save(); }
+  });
+  $$('[data-stask]', body).forEach(el=>el.onchange = ()=>{
+    const s = state.stages.find(x=>x.id===el.dataset.sid);
+    if(!s) return;
+    const t = s.tasks.find(x=>x.id===el.dataset.tid);
+    if(t){ t.text = el.value; save(); }
+  });
+  $$('[data-staskdel]', body).forEach(el=>el.onclick = ()=>{
+    const [sid,tid] = el.dataset.staskdel.split(':');
+    const s = state.stages.find(x=>x.id===sid);
+    if(s){ s.tasks = s.tasks.filter(t=>t.id!==tid); save(); renderStages(body); }
+  });
+  $$('[data-staskadd]', body).forEach(btn=>btn.onclick = ()=>{
+    const sid = btn.dataset.staskadd;
+    const inp = $(`[data-staskinput="${sid}"]`, body);
+    const text = inp.value.trim(); if(!text) return;
+    const s = state.stages.find(x=>x.id===sid);
+    if(!s) return;
+    s.tasks = s.tasks || [];
+    s.tasks.push({id:uid(), text});
+    save(); renderStages(body);
+  });
+  $$('[data-staskinput]', body).forEach(inp=>inp.onkeydown = e=>{
+    if(e.key==='Enter') $(`[data-staskadd="${inp.dataset.staskinput}"]`, body).click();
+  });
+  $$('[data-sresult]', body).forEach(el=>el.oninput = ()=>{
+    const s = state.stages.find(x=>x.id===el.dataset.sresult);
+    if(s){ s.result = el.value; save(); }
+  });
+  $('#addStage', body).onclick = ()=>{
+    const inp = $('#newStage', body);
+    const v = inp.value.trim(); if(!v) return;
+    snapshot();
+    state.stages.push({id:uid(), label:v, done:false, start:'', end:'', tasks:[], result:''});
+    save(); renderStages(body);
+  };
+}
+
+function renderKanban(body){
+  const cols = [{id:'todo',label:'Надо сделать'},{id:'doing',label:'В работе'},{id:'done',label:'Готово'}];
+  const filterMember = state._filterMember || '';
+  body.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <label style="margin:0;font-size:12px;color:var(--muted)">Фильтр:</label>
+    <select id="filterMember" style="max-width:200px"><option value="">Все</option>
+      ${state.team.map(m=>`<option value="${m.id}" ${filterMember===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
+    <div class="kanban">${cols.map(c=>{
+      const items = state.kanban[c.id].filter(t=>!filterMember || t.assignee === filterMember);
+      return `<div class="col" data-col="${c.id}">
+        <div class="col-head"><h4>${c.label}</h4><span class="count">${items.length}</span></div>
+        <div class="col-list">${items.map(t=>{
+          const m = state.team.find(x=>x.id===t.assignee);
+          const mc = state.mentorComments['task:'+t.id];
+          return `<div class="task" draggable="true" data-id="${t.id}">
+            <div class="row1"><span>${esc(t.text)}</span><span class="del" data-del="${t.id}">×</span></div>
+            <div class="meta">
+              ${m?`<span class="assignee" style="background:${memberColor(m)}">${esc(m.name)}</span>`:''}
+              <select data-assign="${t.id}" style="width:auto;padding:2px 6px;font-size:11px">
+                <option value="">—</option>
+                ${state.team.map(x=>`<option value="${x.id}" ${t.assignee===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}
+              </select>
+              ${state.mentorMode?`<button class="btn sm ghost" data-mctask="${t.id}" style="padding:2px 8px">💬</button>`:''}
+            </div>
+            ${mc?`<div class="mentor-note">🎓 ${esc(mc)}</div>`:''}</div>`;
+        }).join('')}</div>
+        <div class="add-task"><input placeholder="Новая задача…" data-input="${c.id}">
+          <button class="btn primary sm" data-add="${c.id}">+</button></div>
+      </div>`;
+    }).join('')}</div>`;
+  $('#filterMember', body).onchange = e=>{ state._filterMember = e.target.value; renderKanban(body); };
+  $$('[data-add]', body).forEach(btn=>btn.onclick = ()=>addTask(btn.dataset.add));
+  $$('[data-input]', body).forEach(inp=>inp.onkeydown = e=>{ if(e.key==='Enter') addTask(inp.dataset.input); });
+  function addTask(col){
+    const inp = $(`[data-input="${col}"]`, body);
+    const text = inp.value.trim(); if(!text) return;
+    snapshot();
+    state.kanban[col].push({id:uid(), text});
+    state.taskLog.push({ts:Date.now(), taskId:null, action:'create', to:col});
+    save(); renderKanban(body);
+  }
+  $$('[data-del]', body).forEach(el=>el.onclick = e=>{
+    e.stopPropagation(); snapshot();
+    for(const k in state.kanban) state.kanban[k] = state.kanban[k].filter(t=>t.id!==el.dataset.del);
+    save(); renderKanban(body);
+  });
+  $$('[data-assign]', body).forEach(el=>el.onchange = ()=>{
+    snapshot();
+    const t = findTask(el.dataset.assign);
+    if(t){ t.t.assignee = el.value || undefined; save(); renderKanban(body); }
+  });
+  $$('[data-mctask]', body).forEach(el=>el.onclick = e=>{ e.stopPropagation(); askMentorComment('task:'+el.dataset.mctask); });
+  let dragId = null;
+  $$('.task', body).forEach(el=>{
+    el.addEventListener('dragstart', ()=>{ dragId = el.dataset.id; el.style.opacity = .4; });
+    el.addEventListener('dragend', ()=>{ el.style.opacity = 1; dragId = null; });
+  });
+  $$('.col', body).forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('dragover'); });
+    col.addEventListener('dragleave', ()=>col.classList.remove('dragover'));
+    col.addEventListener('drop', e=>{
+      e.preventDefault(); col.classList.remove('dragover');
+      if(!dragId) return;
+      snapshot();
+      const to = col.dataset.col;
+      let task = null, from = null;
+      for(const k in state.kanban){
+        const idx = state.kanban[k].findIndex(t=>t.id===dragId);
+        if(idx > -1){ task = state.kanban[k].splice(idx,1)[0]; from = k; break; }
+      }
+      if(task){
+        state.kanban[to].push(task);
+        state.taskLog.push({ts:Date.now(), taskId:task.id, action:'move', from, to});
+      }
+      save(); renderKanban(body);
+    });
+  });
+}
+
+function renderTeam(body){
+  body.innerHTML = `<div class="card"><h3>Участники команды</h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:14px">Данные попадут в проектную карту.</p>
+    ${state.team.length ? state.team.map(m=>{
+      const tasks = allTasks().filter(t=>t.assignee===m.id).length;
+      return `<div class="member">
+        <div class="avatar" style="background:${memberColor(m)}">${esc((m.name||'?')[0].toUpperCase())}</div>
+        <div class="info">
+          <input value="${esc(m.name)}" data-mf="name" data-mid="${m.id}" placeholder="ФИО" style="font-weight:600">
+          <input value="${esc(m.organization||'')}" data-mf="organization" data-mid="${m.id}" placeholder="Организация" style="font-size:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input value="${esc(m.klass||'')}" data-mf="klass" data-mid="${m.id}" placeholder="Класс" style="font-size:12px">
+            <input value="${esc(m.contacts||'')}" data-mf="contacts" data-mid="${m.id}" placeholder="Telegram" style="font-size:12px">
+          </div>
+          <input value="${esc(m.role||'')}" data-mf="role" data-mid="${m.id}" placeholder="Роль" style="font-size:12px">
+          <small>${tasks} задач</small>
+        </div>
+        <button class="btn danger sm" data-mdel="${m.id}">×</button></div>`;
+    }).join('') : '<div class="empty">Пока никого.</div>'}
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <input id="mName" placeholder="ФИО" style="flex:2;min-width:180px">
+      <button class="btn primary" id="mAdd">+ Добавить</button></div>
+  </div>`;
+  $('#mAdd', body).onclick = ()=>{
+    const name = $('#mName', body).value.trim();
+    if(!name) return toast('Укажи ФИО', true);
+    snapshot();
+    state.team.push({id:uid(), name, role:'', color:MEMBER_COLORS[state.team.length%MEMBER_COLORS.length],
+      organization:'', klass:'', contacts:''});
+    save(); renderTeam(body);
+  };
+  $$('[data-mf]', body).forEach(el=>el.onchange = ()=>{
+    const m = state.team.find(x=>x.id===el.dataset.mid);
+    if(m){ m[el.dataset.mf] = el.value; save(); }
+  });
+  $$('[data-mdel]', body).forEach(el=>el.onclick = ()=>{
+    if(!confirm('Удалить?')) return;
+    snapshot(); state.team = state.team.filter(m=>m.id!==el.dataset.mdel); save(); renderTeam(body);
+  });
+}
+
+function renderJournal(body){
+  body.innerHTML = `<div class="card"><h3>Новая запись</h3>
+    <div class="row c2">
+      <div class="field"><label>Заголовок</label><input id="jTitle" placeholder="Что сделано"></div>
+      <div class="field"><label>Дата</label><input id="jDate" value="${fmtDate()}"></div></div>
+    <div class="field"><label>Описание</label><textarea id="jText" placeholder="Подробности"></textarea></div>
+    <button class="btn primary" id="jAdd">Добавить</button></div>
+    <div>${state.journal.length ? [...state.journal].reverse().map(j=>`<div class="journal-entry">
+      <div class="journal-date">${esc(j.date)}</div>
+      <div class="journal-body"><b>${esc(j.title)}</b>${esc(j.text)}
+        <div style="margin-top:8px"><button class="btn danger sm" data-jdel="${j.id}">Удалить</button></div></div>
+    </div>`).join('') : '<div class="empty">Пока нет записей.</div>'}</div>`;
+  $('#jAdd', body).onclick = ()=>{
+    const title = $('#jTitle', body).value.trim();
+    const text = $('#jText', body).value.trim();
+    const date = $('#jDate', body).value.trim() || fmtDate();
+    if(!title && !text) return toast('Заполни', true);
+    snapshot();
+    state.journal.push({id:uid(), title, text, date, ts:Date.now()});
+    save(); renderJournal(body); toast('Запись добавлена');
+  };
+  $$('[data-jdel]', body).forEach(el=>el.onclick = ()=>{
+    snapshot(); state.journal = state.journal.filter(j=>j.id!==el.dataset.jdel); save(); renderJournal(body);
+  });
+}
+
+function renderReflection(body){
+  body.innerHTML = `<div class="card"><h3>Дневник рефлексии</h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:12px">Заполняй после каждой рабочей сессии.</p>
+    <div class="reflect-3">
+      <div class="field"><label>✅ Что получилось</label><textarea id="rWin"></textarea></div>
+      <div class="field"><label>🧱 Что застопорилось</label><textarea id="rBlock"></textarea></div>
+      <div class="field"><label>➡️ Следующий шаг</label><textarea id="rNext"></textarea></div>
+    </div>
+    <button class="btn primary" id="rAdd" style="margin-top:14px">Сохранить</button></div>
+    <div>${state.reflection.length ? [...state.reflection].reverse().map(r=>`<div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <b style="font-size:13px">${esc(r.date)}</b>
+        <button class="btn danger sm" data-rdel="${r.id}">Удалить</button></div>
+      <div style="font-size:13px;line-height:1.6">
+        ${r.win?`<p><b>✅ Получилось:</b> ${esc(r.win)}</p>`:''}
+        ${r.block?`<p><b>🧱 Застопорилось:</b> ${esc(r.block)}</p>`:''}
+        ${r.next?`<p><b>➡️ Следующий шаг:</b> ${esc(r.next)}</p>`:''}
+      </div></div>`).join('') : '<div class="empty">Пока нет записей.</div>'}</div>`;
+  $('#rAdd', body).onclick = ()=>{
+    const win = $('#rWin', body).value.trim();
+    const block = $('#rBlock', body).value.trim();
+    const next = $('#rNext', body).value.trim();
+    if(!win && !block && !next) return toast('Заполни хотя бы одно поле', true);
+    snapshot();
+    state.reflection.push({id:uid(), date:fmtDate(), win, block, next, ts:Date.now()});
+    save(); renderReflection(body); toast('Записано');
+  };
+  $$('[data-rdel]', body).forEach(el=>el.onclick = ()=>{
+    snapshot(); state.reflection = state.reflection.filter(r=>r.id!==el.dataset.rdel); save(); renderReflection(body);
+  });
+}
+
+function renderAssessment(body){
+  body.innerHTML = `<div class="card"><h3>Самопроверка по критериям защиты</h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:14px">Оцени проект по шкале 1–5.</p>
+    ${ASSESSMENT_CRITERIA.map(c=>{
+      const cur = state.assessment[c.id]?.value || 0;
+      return `<div class="crit-row"><div><div class="name">${esc(c.name)}</div>
+        <div class="hint">${esc(c.hint)}</div></div>
+        <select data-crit="${c.id}">${ASSESS_LEVELS.map(l=>`<option value="${l.v}" ${cur===l.v?'selected':''}>${esc(l.label)}</option>`).join('')}</select>
+      </div>`;
+    }).join('')}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <b>Средний балл: </b><span id="asAvg">${(ASSESSMENT_CRITERIA.reduce((s,c)=>s+(state.assessment[c.id]?.value||0),0)/ASSESSMENT_CRITERIA.length).toFixed(2)}</span> / 5</div>
+  </div>`;
+  $$('[data-crit]', body).forEach(el=>el.onchange = ()=>{
+    state.assessment[el.dataset.crit] = state.assessment[el.dataset.crit] || {};
+    state.assessment[el.dataset.crit].value = +el.value;
+    save();
+    $('#asAvg', body).textContent = (ASSESSMENT_CRITERIA.reduce((s,c)=>s+(state.assessment[c.id]?.value||0),0)/ASSESSMENT_CRITERIA.length).toFixed(2);
+  });
+}
+
+function renderResources(body){
+  body.innerHTML = `<div class="card"><h3>Добавить ресурс</h3>
+    <div class="row c2">
+      <div class="field"><label>Название</label><input id="rName"></div>
+      <div class="field"><label>Ссылка</label><input id="rUrl" placeholder="https://…"></div></div>
+    <div class="field"><label>Заметка</label><input id="rNote"></div>
+    <button class="btn primary" id="rAdd">Добавить</button></div>
+    <div>${state.resources.length ? state.resources.map(r=>`<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div><b>${esc(r.name)}</b>
+        ${r.url?`<div><a href="${esc(r.url)}" target="_blank" style="color:var(--accent);font-size:12.5px">${esc(r.url)}</a></div>`:''}
+        ${r.note?`<div class="muted" style="font-size:12.5px;margin-top:4px">${esc(r.note)}</div>`:''}</div>
+      <button class="btn danger sm" data-rdel="${r.id}">Удалить</button></div>`).join('') : '<div class="empty">Пусто.</div>'}</div>`;
+  $('#rAdd', body).onclick = ()=>{
+    const name = $('#rName', body).value.trim();
+    if(!name) return toast('Укажи название', true);
+    snapshot();
+    state.resources.push({id:uid(), name, url:$('#rUrl', body).value.trim(), note:$('#rNote', body).value.trim()});
+    save(); renderResources(body);
+  };
+  $$('[data-rdel]', body).forEach(el=>el.onclick = ()=>{
+    snapshot(); state.resources = state.resources.filter(r=>r.id!==el.dataset.rdel); save(); renderResources(body);
+  });
+}
+
+function renderHistory(body){
+  body.innerHTML = `<div class="card"><h3>Снимки состояния</h3>
+    <p class="muted" style="font-size:12.5px;margin-bottom:14px">Снимки создаются вручную и в ключевых действиях.</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn primary" id="hSnap">📸 Снимок</button>
+      <button class="btn" id="hUndo">↶ Отменить (Ctrl+Z)</button></div>
+    ${state.history.length ? state.history.map((h,i)=>`<div class="kv">
+      <span>${esc(fmtTime(h.ts))} — <span class="muted">${esc(h.label)}</span></span>
+      <span><button class="btn sm" data-hload="${i}">Восстановить</button>
+        <button class="btn danger sm" data-hdel="${i}">×</button></span></div>`).join('') : '<div class="empty">Снимков нет.</div>'}
+  </div>`;
+  $('#hSnap', body).onclick = ()=>{ takeHistorySnapshot('вручную'); renderHistory(body); toast('Снимок сделан'); };
+  $('#hUndo', body).onclick = undo;
+  $$('[data-hload]', body).forEach(el=>el.onclick = ()=>{
+    const h = state.history[+el.dataset.hload];
+    if(!h || !confirm('Восстановить?')) return;
+    const keep = state.history;
+    state = migrate(JSON.parse(JSON.stringify(h.data)));
+    state.history = keep;
+    save(); renderNav(); renderMain();
+    toast('Восстановлено');
+  });
+  $$('[data-hdel]', body).forEach(el=>el.onclick = ()=>{
+    state.history.splice(+el.dataset.hdel,1); save(); renderHistory(body);
+  });
+}
+
+/* ============ АНАЛИТИКА ============ */
+function renderAnalytics(main){
+  main.innerHTML = `<h1 class="page-title">Аналитика</h1>
+    <p class="page-sub">Прогресс, активность и слабые места.</p>
+    <div class="row c2">
+      <div class="card"><h3>Burndown</h3><canvas id="burndown" height="220"></canvas></div>
+      <div class="card"><h3>Время по задачам</h3><canvas id="timeByTask" height="220"></canvas></div>
+    </div>
+    <div class="card"><h3>Активность</h3><div class="heatmap" id="heatmap"></div></div>
+    <div class="row c2">
+      <div class="card"><h3>Календарь</h3><div id="calendar"></div></div>
+      <div class="card"><h3>Рентген карты</h3><div id="xray"></div></div>
+    </div>`;
+  drawBurndown($('#burndown'));
+  drawTimeByTask($('#timeByTask'));
+  drawHeatmap($('#heatmap'));
+  drawCalendar($('#calendar'));
+  drawXray($('#xray'));
+}
+function drawBurndown(c){
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = 220;
+  c.width = W*dpr; c.height = H*dpr;
+  ctx.scale(dpr, dpr);
+  const css = getComputedStyle(document.documentElement);
+  const accent = css.getPropertyValue('--accent').trim() || '#4f8cff';
+  const muted = css.getPropertyValue('--muted').trim() || '#8a97ad';
+  const border = css.getPropertyValue('--border').trim() || '#2a3446';
+  const start = state.gantt.length ? new Date(Math.min(...state.gantt.map(g=>+new Date(g.start)))).getTime() : Date.now()-30*86400000;
+  const end = state.gantt.length ? new Date(Math.max(...state.gantt.map(g=>+new Date(g.end)))).getTime() : Date.now()+1;
+  const days = Math.max(7, Math.ceil((end-start)/86400000));
+  const totalTasks = allTasks().length;
+  if(totalTasks === 0){
+    ctx.fillStyle = muted; ctx.font = '13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Нет задач', W/2, H/2);
+    return;
+  }
+  const series = [];
+  for(let d=0; d<=days; d++){
+    const t = start + d*86400000;
+    const doneByThen = state.taskLog.filter(l=>l.action==='move' && l.to==='done' && l.ts <= t+86400000).length;
+    series.push({x:d, y: Math.max(0, totalTasks - doneByThen)});
+  }
+  if(!state.taskLog.length){
+    for(let d=0; d<=days; d++) series[d].y = d === days ? state.kanban.done.length : totalTasks;
+  }
+  const padL=34, padR=14, padT=14, padB=24;
+  const cw = W-padL-padR, ch = H-padT-padB;
+  ctx.strokeStyle = border; ctx.lineWidth = 1;
+  for(let i=0; i<=4; i++){
+    const y = padT + (ch/4)*i;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+cw,y); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = '10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(String(Math.round(totalTasks-(totalTasks/4)*i)), padL-6, y+3);
+  }
+  ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath();
+  series.forEach((p,i)=>{
+    const x = padL + (cw/days)*p.x;
+    const y = padT + ch - (ch/totalTasks)*p.y;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = muted; ctx.font = '10px sans-serif'; ctx.textAlign='left';
+  ctx.fillText(new Date(start).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}), padL, H-6);
+  ctx.textAlign='right';
+  ctx.fillText(new Date(end).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}), padL+cw, H-6);
+}
+function drawTimeByTask(c){
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth, H = 220;
+  c.width = W*dpr; c.height = H*dpr;
+  ctx.scale(dpr, dpr);
+  const css = getComputedStyle(document.documentElement);
+  const accent = css.getPropertyValue('--accent').trim();
+  const muted = css.getPropertyValue('--muted').trim();
+  const byTask = {};
+  state.pomo.sessions.forEach(s=>{ if(s.taskId) byTask[s.taskId] = (byTask[s.taskId]||0) + (s.minutes||0); });
+  const entries = Object.entries(byTask).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  if(!entries.length){
+    ctx.fillStyle = muted; ctx.font = '13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Нет сессий Помодоро', W/2, H/2);
+    return;
+  }
+  const max = Math.max(...entries.map(e=>e[1]));
+  const padL=130, padR=30, padT=10, padB=10;
+  const rowH = (H-padT-padB)/entries.length;
+  entries.forEach(([id,min],i)=>{
+    const t = findTask(id); const label = t ? t.t.text : '—';
+    const y = padT + i*rowH;
+    const w = ((W-padL-padR)*min)/max;
+    ctx.fillStyle = accent; ctx.fillRect(padL, y+4, w, rowH-10);
+    ctx.fillStyle = muted; ctx.font='11px sans-serif'; ctx.textAlign='right';
+    const short = label.length > 22 ? label.slice(0,21)+'…' : label;
+    ctx.fillText(short, padL-8, y+rowH/2+4);
+    ctx.textAlign='left';
+    ctx.fillStyle = css.getPropertyValue('--text').trim();
+    ctx.fillText(min+' мин', padL+w+6, y+rowH/2+4);
+  });
+}
+function drawHeatmap(box){
+  if(!box) return;
+  const days=91;
+  const counts = {};
+  state.journal.forEach(j=>{
+    try{
+      const parts = j.date.split('.').reverse().join('-');
+      counts[dayKey(new Date(parts))] = (counts[dayKey(new Date(parts))]||0)+1;
+    }catch(e){}
+  });
+  (state.pomo.sessions||[]).forEach(s=>{ const k = dayKey(s.ts||Date.now()); counts[k] = (counts[k]||0)+1; });
+  const cells = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(today); start.setDate(start.getDate()-days+1);
+  for(let i=0; i<days; i++){
+    const d = new Date(start); d.setDate(d.getDate()+i);
+    const k = dayKey(d);
+    const n = counts[k]||0;
+    const lvl = n===0?0 : n===1?1 : n<=3?2 : n<=6?3 : 4;
+    cells.push(`<div class="heat-cell ${lvl?'l'+lvl:''}" title="${k}: ${n}"></div>`);
+  }
+  box.innerHTML = cells.join('');
+}
+function drawCalendar(box){
+  if(!box) return;
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const first = new Date(year, month, 1);
+  const startDay = (first.getDay()+6)%7;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const prevDays = new Date(year, month, 0).getDate();
+  const events = {};
+  state.gantt.forEach(g=>{
+    try{
+      const s = new Date(g.start), e = new Date(g.end);
+      for(let d = new Date(s); d <= e; d.setDate(d.getDate()+1)){
+        if(d.getMonth()===month && d.getFullYear()===year){
+          const k = d.getDate();
+          (events[k] = events[k] || []).push(g.name);
+        }
+      }
+    }catch(e){}
+  });
+  state.stages.forEach(st=>{
+    if(!st.start || !st.end) return;
+    try{
+      const s = new Date(st.start), e = new Date(st.end);
+      for(let d = new Date(s); d <= e; d.setDate(d.getDate()+1)){
+        if(d.getMonth()===month && d.getFullYear()===year){
+          const k = d.getDate();
+          (events[k] = events[k] || []).push('Этап: ' + st.label);
+        }
+      }
+    }catch(e){}
+  });
+  let html = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div class="cal-head">${d}</div>`).join('');
+  for(let i=0; i<startDay; i++){
+    const d = prevDays - startDay + i + 1;
+    html += `<div class="cal-cell other"><div class="d">${d}</div></div>`;
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const today = d===now.getDate();
+    const evs = events[d]||[];
+    html += `<div class="cal-cell ${today?'today':''}"><div class="d">${d}</div>
+      ${evs.slice(0,3).map(e=>`<div class="cal-event" title="${esc(e)}">${esc(e)}</div>`).join('')}
+      ${evs.length>3?`<div class="muted" style="font-size:10px">+${evs.length-3}</div>`:''}</div>`;
+  }
+  const trailing = (7-((startDay+daysInMonth)%7))%7;
+  for(let i=1; i<=trailing; i++) html += `<div class="cal-cell other"><div class="d">${i}</div></div>`;
+  box.innerHTML = `<div class="cal">${html}</div>
+    <div class="muted" style="font-size:11px;margin-top:10px">${now.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}</div>`;
+}
+function drawXray(box){
+  if(!box) return;
+  const rows = PROJECT_CARD_FIELDS.map(f=>{
+    const len = (state.project[f.key]||'').trim().length;
+    const target = 120;
+    const pct = Math.min(100, Math.round(len/target*100));
+    const cls = pct < 30 ? 'xray-weak' : pct < 70 ? 'xray-mid' : 'xray-ok';
+    return {f, len, pct, cls};
+  });
+  box.innerHTML = rows.map(r=>`<div class="xray-row ${r.cls}"><div>
+    <div style="display:flex;justify-content:space-between"><span>${esc(r.f.label)}</span>
+      <span class="muted" style="font-size:11px">${r.len} симв.</span></div>
+    <div class="xray-bar"><div style="width:${r.pct}%"></div></div>
+  </div><div></div></div>`).join('') +
+    `<div class="muted" style="font-size:11.5px;margin-top:10px">Красные — доработать перед защитой.</div>`;
+}
+
+/* ============ ДОСКА ============ */
+function renderBoard(main){
+  main.innerHTML = `<h1 class="page-title">Совместная доска</h1>
+    <p class="page-sub">Общая доска команды во встроенном фрейме.</p>
+    <iframe style="width:100%;height:calc(100vh - 190px);border:1px solid var(--border);border-radius:13px;background:var(--bg2)"
+      src="https://board.volt-voxel.ru/" allow="clipboard-read; clipboard-write"></iframe>
+    <p class="muted" style="margin-top:10px;font-size:12px">
+      Если не открывается — <a href="https://board.volt-voxel.ru/" target="_blank" style="color:var(--accent)">открой в новой вкладке</a>.</p>`;
+}
+
+/* ============ ИНСТРУМЕНТЫ ============ */
+let pomoInterval=null, pomoSeconds=25*60, pomoRunning=false, pomoMode='work';
+function renderTools(main){
+  main.innerHTML = `<h1 class="page-title">Инструменты</h1>
+    <p class="page-sub">Помодоро, SMART, брейншторм, Гант, Эйзенхауэр, Исикава, питч.</p>
+    <div class="tool-grid">
+      <div class="tool-card pomo">
+        <h3 style="justify-content:center">⏱ Помодоро</h3>
+        <div class="pomo-mode" id="pomoMode">${pomoMode==='work'?'Работа':'Перерыв'}</div>
+        <div class="pomo-time" id="pomoTime">${fmtPomo(pomoSeconds)}</div>
+        <div class="pomo-task"><label>Привязать к задаче</label>
+          <select id="pomoTask"><option value="">— без задачи —</option>
+            ${allTasks().map(t=>`<option value="${t.id}" ${state.pomo.focusTaskId===t.id?'selected':''}>${esc(t.text)}</option>`).join('')}</select></div>
+        <div class="pomo-actions">
+          <button class="btn primary" id="pomoToggle">${pomoRunning?'Пауза':'Старт'}</button>
+          <button class="btn" id="pomoReset">Сброс</button>
+          <button class="btn" id="pomoSwitch">Режим</button></div>
+        <div class="muted" style="font-size:11.5px;margin-top:10px">Сессий: ${(state.pomo.sessions||[]).length} · всего ${(state.pomo.sessions||[]).reduce((s,x)=>s+(x.minutes||0),0)} мин</div>
+      </div>
+      <div class="tool-card"><h3>🎯 SMART-цель</h3>
+        <div class="sm-grid">
+          <label>S</label><textarea data-smart="s" placeholder="Конкретная">${esc(state.smart.s)}</textarea>
+          <label>M</label><textarea data-smart="m" placeholder="Измеримая">${esc(state.smart.m)}</textarea>
+          <label>A</label><textarea data-smart="a" placeholder="Достижимая">${esc(state.smart.a)}</textarea>
+          <label>R</label><textarea data-smart="r" placeholder="Значимая">${esc(state.smart.r)}</textarea>
+          <label>T</label><textarea data-smart="t" placeholder="Ограниченная по времени">${esc(state.smart.t)}</textarea>
+        </div>
+        <button class="btn sm" id="smartApply" style="margin-top:10px">Вставить в цель</button></div>
+      <div class="tool-card"><h3>🧠 Брейншторм</h3>
+        <ul class="brainstorm-list" id="bsList"></ul>
+        <div style="display:flex;gap:6px"><input id="bsInput" placeholder="Идея…">
+          <button class="btn primary" id="bsAdd">+</button></div></div>
+      <div class="tool-card wide"><h3>📊 Диаграмма Ганта</h3>
+        <div class="gantt-row" style="font-size:11px;color:var(--muted);text-transform:uppercase">
+          <div>Задача</div><div>Начало</div><div>Конец</div><div></div></div>
+        <div id="ganttList"></div>
+        <button class="btn" id="ganttAdd" style="margin-top:10px">+ Добавить</button></div>
+      <div class="tool-card"><h3>🧩 Матрица Эйзенхауэра</h3>
+        <div class="eisen">
+          <div class="quad q1"><h5>Важно / Срочно</h5><div data-eisen="q1"></div>
+            <input placeholder="+ задача" data-einp="q1" style="margin-top:8px;font-size:12px;padding:6px 9px"></div>
+          <div class="quad q2"><h5>Важно / Не срочно</h5><div data-eisen="q2"></div>
+            <input placeholder="+ задача" data-einp="q2" style="margin-top:8px;font-size:12px;padding:6px 9px"></div>
+          <div class="quad q3"><h5>Не важно / Срочно</h5><div data-eisen="q3"></div>
+            <input placeholder="+ задача" data-einp="q3" style="margin-top:8px;font-size:12px;padding:6px 9px"></div>
+          <div class="quad q4"><h5>Не важно / Не срочно</h5><div data-eisen="q4"></div>
+            <input placeholder="+ задача" data-einp="q4" style="margin-top:8px;font-size:12px;padding:6px 9px"></div>
+        </div></div>
+      <div class="tool-card"><h3>🐟 Диаграмма Исикавы</h3>
+        ${[['people','Люди'],['methods','Методы'],['machines','Оборудование'],['materials','Материалы'],['measurement','Измерения'],['environment','Среда']]
+          .map(([k,l])=>`<div class="ishi-cat"><h5>${l}</h5>
+            <textarea data-ishi="${k}" style="min-height:50px">${esc(state.ishi[k])}</textarea></div>`).join('')}</div>
+      <div class="tool-card"><h3>⏱ Питч на 60 секунд</h3>
+        <p class="muted" style="font-size:12.5px;margin-bottom:12px">Расскажи проект за минуту.</p>
+        <div style="text-align:center;font-size:44px;font-weight:700;font-variant-numeric:tabular-nums" id="pitchTime">1:00</div>
+        <div style="text-align:center;color:var(--accent);font-size:13px;min-height:20px;margin:6px 0 12px" id="pitchHint">Проблема</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn primary" id="pitchStart">Старт</button>
+          <button class="btn" id="pitchReset">Сброс</button></div></div>
+    </div>`;
+  $('#pomoToggle', main).onclick = togglePomo;
+  $('#pomoTask', main).onchange = e=>{ state.pomo.focusTaskId = e.target.value || null; save(); };
+  $('#pomoReset', main).onclick = ()=>{ stopPomo(); pomoSeconds = pomoMode==='work'?25*60:5*60; $('#pomoTime').textContent = fmtPomo(pomoSeconds); $('#pomoToggle').textContent='Старт'; };
+  $('#pomoSwitch', main).onclick = ()=>{
+    pomoMode = pomoMode==='work'?'break':'work';
+    stopPomo();
+    pomoSeconds = pomoMode==='work'?25*60:5*60;
+    $('#pomoMode').textContent = pomoMode==='work'?'Работа':'Перерыв';
+    $('#pomoTime').textContent = fmtPomo(pomoSeconds);
+    $('#pomoToggle').textContent = 'Старт';
+  };
+  $$('[data-smart]', main).forEach(el=>el.oninput = ()=>{ state.smart[el.dataset.smart] = el.value; save(); });
+  $('#smartApply', main).onclick = ()=>{
+    const g = ['s','m','a','r','t'].map(k=>state.smart[k]).filter(Boolean).join('; ');
+    if(!g) return toast('Заполни SMART', true);
+    snapshot(); state.project.goal = g; save(); toast('Цель обновлена');
+  };
+  const bsList = $('#bsList', main);
+  function renderBS(){
+    const sorted = [...state.brainstorm].sort((a,b)=>(b.votes||0)-(a.votes||0));
+    bsList.innerHTML = sorted.length ? sorted.map(b=>`<li>
+      <span style="flex:1">${esc(b.text)}</span>
+      <span class="vote ${b.voted?'voted':''}" data-bsvote="${b.id}">▲ ${b.votes||0}</span>
+      <span data-bsdel="${b.id}" style="cursor:pointer;color:var(--muted);margin-left:6px">×</span></li>`).join('')
+      : '<li class="muted" style="justify-content:center">Пока пусто</li>';
+    $$('[data-bsvote]', bsList).forEach(el=>el.onclick = ()=>{
+      const b = state.brainstorm.find(x=>x.id===el.dataset.bsvote);
+      if(!b) return;
+      if(b.voted){ b.votes = Math.max(0,(b.votes||0)-1); b.voted=false; }
+      else { b.votes = (b.votes||0)+1; b.voted=true; }
+      save(); renderBS();
+    });
+    $$('[data-bsdel]', bsList).forEach(el=>el.onclick = ()=>{ snapshot(); state.brainstorm = state.brainstorm.filter(b=>b.id!==el.dataset.bsdel); save(); renderBS(); });
+  }
+  renderBS();
+  $('#bsAdd', main).onclick = ()=>{
+    const inp = $('#bsInput', main);
+    const text = inp.value.trim(); if(!text) return;
+    state.brainstorm.push({id:uid(), text, votes:0, voted:false});
+    inp.value=''; save(); renderBS();
+  };
+  $('#bsInput', main).onkeydown = e=>{ if(e.key==='Enter') $('#bsAdd', main).click(); };
+  const gList = $('#ganttList', main);
+  function renderGantt(){
+    if(!state.gantt.length){ gList.innerHTML = '<div class="empty" style="padding:14px">Задач нет</div>'; return; }
+    gList.innerHTML = state.gantt.map(g=>{
+      const pct = g.total ? Math.min(100, Math.max(0, Math.round((g.done||0)/g.total*100))) : 0;
+      return `<div class="gantt-row">
+        <input value="${esc(g.name)}" data-gfield="name" data-gid="${g.id}">
+        <input type="date" value="${esc(g.start)}" data-gfield="start" data-gid="${g.id}">
+        <input type="date" value="${esc(g.end)}" data-gfield="end" data-gid="${g.id}">
+        <button class="btn danger sm" data-gdel="${g.id}">×</button></div>
+        <div class="gantt-bar-wrap"><div class="gantt-bar" style="width:${pct}%"></div></div>`;
+    }).join('');
+    $$('[data-gdel]', gList).forEach(el=>el.onclick = ()=>{ snapshot(); state.gantt = state.gantt.filter(g=>g.id!==el.dataset.gdel); save(); renderGantt(); });
+    $$('[data-gfield]', gList).forEach(el=>el.onchange = ()=>{
+      const g = state.gantt.find(x=>x.id===el.dataset.gid);
+      if(g){ g[el.dataset.gfield] = el.value; save(); renderGantt(); }
+    });
+  }
+  renderGantt();
+  $('#ganttAdd', main).onclick = ()=>{
+    const today = new Date().toISOString().slice(0,10);
+    snapshot();
+    state.gantt.push({id:uid(), name:'Новая задача', start:today, end:today, done:0, total:10});
+    save(); renderGantt();
+  };
+  function renderEisen(){
+    ['q1','q2','q3','q4'].forEach(q=>{
+      const box = $(`[data-eisen="${q}"]`, main);
+      box.innerHTML = state.eisen[q].length ? state.eisen[q].map(it=>`<div class="quad-item">
+        <span>${esc(it.text)}</span><span data-edel="${q}:${it.id}">×</span></div>`).join('')
+        : '<div class="muted" style="font-size:11px">—</div>';
+    });
+    $$('[data-edel]', main).forEach(el=>el.onclick = ()=>{
+      const [q,id] = el.dataset.edel.split(':');
+      state.eisen[q] = state.eisen[q].filter(it=>it.id!==id);
+      save(); renderEisen();
+    });
+  }
+  renderEisen();
+  $$('[data-einp]', main).forEach(inp=>inp.onkeydown = e=>{
+    if(e.key !== 'Enter') return;
+    const text = inp.value.trim(); if(!text) return;
+    state.eisen[inp.dataset.einp].push({id:uid(), text});
+    inp.value=''; save(); renderEisen();
+  });
+  $$('[data-ishi]', main).forEach(el=>el.oninput = ()=>{ state.ishi[el.dataset.ishi] = el.value; save(); });
+  renderPitch(main);
+}
+function fmtPomo(s){
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const sec = (s%60).toString().padStart(2,'0');
+  return `${m}:${sec}`;
+}
+function togglePomo(){
+  const btn = $('#pomoToggle');
+  if(pomoRunning){ stopPomo(); if(btn) btn.textContent='Старт'; return; }
+  pomoRunning = true;
+  if(btn) btn.textContent = 'Пауза';
+  pomoInterval = setInterval(()=>{
+    pomoSeconds--;
+    const el = $('#pomoTime');
+    if(el) el.textContent = fmtPomo(pomoSeconds);
+    if(pomoSeconds <= 0){
+      stopPomo();
+      if(btn) btn.textContent = 'Старт';
+      if(pomoMode==='work'){
+        state.pomo.sessions.push({id:uid(), taskId:state.pomo.focusTaskId||null, minutes:25, ts:Date.now()});
+        save();
+      }
+      toast(pomoMode==='work' ? 'Работа завершена — отдохни!' : 'Перерыв закончен!');
+    }
+  }, 1000);
+}
+function stopPomo(){ pomoRunning = false; clearInterval(pomoInterval); pomoInterval = null; }
+
+let pitchInterval=null, pitchSeconds=60, pitchRunning=false;
+function renderPitch(main){
+  const t = $('#pitchTime', main), h = $('#pitchHint', main);
+  if(t) t.textContent = '1:00';
+  if(h) h.textContent = 'Проблема';
+  $('#pitchStart', main).onclick = ()=>{
+    if(pitchRunning){ clearInterval(pitchInterval); pitchRunning=false; $('#pitchStart').textContent='Старт'; return; }
+    pitchRunning = true; $('#pitchStart').textContent='Пауза';
+    pitchInterval = setInterval(()=>{
+      pitchSeconds--;
+      const mm = Math.floor(pitchSeconds/60), ss = pitchSeconds%60;
+      if(t) t.textContent = `${mm}:${String(ss).padStart(2,'0')}`;
+      if(h){
+        if(pitchSeconds > 40) h.textContent = 'Проблема';
+        else if(pitchSeconds > 20) h.textContent = 'Решение';
+        else if(pitchSeconds > 5) h.textContent = 'Результат';
+        else h.textContent = 'Финальная фраза';
+      }
+      if(pitchSeconds <= 0){
+        clearInterval(pitchInterval); pitchRunning=false;
+        $('#pitchStart').textContent='Старт';
+        toast('Время!');
+        pitchSeconds = 60;
+        if(t) t.textContent = '1:00';
+        if(h) h.textContent = 'Проблема';
+      }
+    }, 1000);
+  };
+  $('#pitchReset', main).onclick = ()=>{
+    clearInterval(pitchInterval); pitchRunning=false;
+    pitchSeconds = 60;
+    if(t) t.textContent = '1:00';
+    if(h) h.textContent = 'Проблема';
+    $('#pitchStart').textContent='Старт';
+  };
+}
+
+/* ============ ЗАЩИТА ============ */
+let defIdx = 0;
+function buildSlides(){
+  const p = state.project;
+  const slides = [];
+  slides.push({h:'h1', title:p.name||'Проект', sub: (state.team.map(m=>m.name).join(', ') || p.participants || '')});
+  if(p.problem) slides.push({h:'h2', title:'Проблема', body:p.problem});
+  if(p.relevance) slides.push({h:'h2', title:'Актуальность', body:p.relevance});
+  if(p.goal) slides.push({h:'h2', title:'Цель', body:p.goal});
+  if(p.tasks) slides.push({h:'h2', title:'Задачи', body:p.tasks});
+  if(p.analogs) slides.push({h:'h2', title:'Аналоги', body:p.analogs});
+  if(p.techSpecs) slides.push({h:'h2', title:'ТХ', body:p.techSpecs});
+  if(state.stages.length) slides.push({h:'h2', title:'Этапы', list: state.stages.map(s=>(s.done?'✓ ':'○ ')+s.label)});
+  if(p.economics) slides.push({h:'h2', title:'Экономика', body:p.economics});
+  if(p.results) slides.push({h:'h2', title:'Результаты', body:p.results});
+  if(p.stakeholders) slides.push({h:'h2', title:'Стейкхолдеры', body:p.stakeholders});
+  slides.push({h:'h1', title:'Спасибо!', sub:p.contacts||''});
+  return slides;
+}
+function openDefense(){
+  const slides = buildSlides();
+  if(slides.length < 2) return toast('Заполни карту', true);
+  state._slides = slides; defIdx = 0;
+  renderDefense();
+  $('#defense').classList.add('show');
+  document.addEventListener('keydown', defKey);
+}
+function closeDefense(){
+  $('#defense').classList.remove('show');
+  document.removeEventListener('keydown', defKey);
+}
+function defKey(e){
+  if(e.key === 'Escape') closeDefense();
+  else if(e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); nextDef(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); prevDef(); }
+}
+function nextDef(){ if(defIdx < state._slides.length-1){ defIdx++; renderDefense(); } }
+function prevDef(){ if(defIdx > 0){ defIdx--; renderDefense(); } }
+function renderDefense(){
+  const s = state._slides[defIdx];
+  const slide = $('#defSlide');
+  slide.innerHTML = s.h === 'h1' ? `<h1>${esc(s.title)}</h1>${s.sub?`<p>${esc(s.sub)}</p>`:''}`
+    : `<h2>${esc(s.title)}</h2>${s.body?`<p>${esc(s.body)}</p>`:''}
+       ${s.list?`<ul>${s.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}`;
+  $('#defCounter').textContent = `${defIdx+1} / ${state._slides.length}`;
+  $('#defLabel').textContent = state.project.name || 'VolVoxPro';
+}
+$('#defNext').onclick = nextDef;
+$('#defPrev').onclick = prevDef;
+$('#defExit').onclick = closeDefense;
+
+/* ============ ЭКСПОРТ ============ */
+function renderExport(main){
+  main.innerHTML = `<h1 class="page-title">Экспорт и импорт</h1>
+    <p class="page-sub">Сохрани проект, передай наставнику, восстанови из файла.</p>
+    <div class="hero-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div><div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px">Официальный документ</div>
+        <h3 style="font-size:16px;margin-bottom:4px">Проектная карта Кванториума</h3>
+        <p class="muted" style="font-size:12.5px">Титул + таблица этапов и задач.</p></div>
+      <button class="btn primary big" id="expCard">📋 Скачать проектную карту (.doc)</button></div></div>
+    <div class="row c2">
+      <div class="card"><h3>Экспорт</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn primary" id="expJson">💾 JSON (полная копия)</button>
+          <button class="btn" id="expWord">📄 Word (.doc)</button>
+          <button class="btn" id="expXlsx">📊 Excel (.xlsx)</button>
+          <button class="btn" id="expMd">📝 Markdown</button>
+          <button class="btn" id="expHtml">🌐 HTML-слайды</button>
+          <button class="btn" id="expPdf">🖨 PDF (печать)</button></div></div>
+      <div class="card"><h3>Импорт</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" id="impBtn">📥 Заменить из JSON</button>
+          <button class="btn" id="mergeBtn">🔀 Слить с JSON</button>
+          <input type="file" id="impFile" accept=".json" style="display:none">
+          <input type="file" id="mergeFile" accept=".json" style="display:none"></div></div>
+    </div>
+    <div class="card"><h3>Снимки и обслуживание</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="snapBtn">📸 Сделать снимок</button>
+        <button class="btn danger" id="resetAll">🗑 Сбросить всё</button>
+        <button class="btn" id="wizardBtn">🪄 Мастер проекта</button></div>
+      <p class="muted" style="font-size:12px;margin-top:12px">Снимков: ${state.history.length}.</p></div>
+    <div class="card"><h3>Автобэкап</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px">Браузер может очистить localStorage — делай резервную копию.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label style="margin:0"><input type="checkbox" id="autobackup" style="width:auto;margin-right:6px" ${state._autobackup?'checked':''}> Напоминать раз в день</label>
+        <span class="muted" style="font-size:12px">Последний бэкап: ${state._lastBackup?fmtTime(state._lastBackup):'—'}</span></div></div>`;
+  $('#expCard', main).onclick = exportProjectCard;
+  $('#expJson', main).onclick = exportToFile;
+  $('#expWord', main).onclick = exportWord;
+  $('#expXlsx', main).onclick = exportXLSX;
+  $('#expMd', main).onclick = exportMarkdown;
+  $('#expHtml', main).onclick = exportHtmlSlides;
+  $('#expPdf', main).onclick = ()=>window.print();
+  $('#impBtn', main).onclick = ()=>$('#impFile', main).click();
+  $('#mergeBtn', main).onclick = ()=>$('#mergeFile', main).click();
+  $('#impFile', main).onchange = async e=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const data = await importFromFile(f);
+      if(!confirm('Заменить текущие данные?')) return;
+      state = migrate(data);
+      save(); renderNav(); renderMain();
+      toast('Загружено');
+    }catch(err){ toast('Некорректный файл', true); }
+  };
+  $('#mergeFile', main).onchange = async e=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const other = migrate(await importFromFile(f));
+      snapshot();
+      PROJECT_CARD_FIELDS.forEach(fld=>{
+        if(!(state.project[fld.key]||'').trim() && (other.project[fld.key]||'').trim()){
+          state.project[fld.key] = other.project[fld.key];
+        }
+      });
+      ['team','journal','resources','brainstorm','reflection','gantt','stages'].forEach(k=>{
+        const map = new Map(state[k].map(x=>[x.id, x]));
+        (other[k]||[]).forEach(x=>{ if(!map.has(x.id)) map.set(x.id, x); });
+        state[k] = [...map.values()];
+      });
+      ['todo','doing','done'].forEach(col=>{
+        const map = new Map(state.kanban[col].map(x=>[x.id, x]));
+        (other.kanban[col]||[]).forEach(x=>{ if(!map.has(x.id)) map.set(x.id, x); });
+        state.kanban[col] = [...map.values()];
+      });
+      Object.assign(state.mentorComments, other.mentorComments||{});
+      save(); renderNav(); renderMain();
+      toast('Слияние завершено');
+    }catch(err){ toast('Ошибка слияния: '+err.message, true); }
+  };
+  $('#resetAll', main).onclick = ()=>{
+    if(!confirm('Удалить ВСЕ данные?')) return;
+    localStorage.removeItem(LS_KEY);
+    state = defaultState();
+    save(); renderNav(); renderMain();
+    toast('Данные сброшены');
+  };
+  $('#snapBtn', main).onclick = ()=>{ takeHistorySnapshot('вручную'); renderExport(main); toast('Снимок сделан'); };
+  $('#wizardBtn', main).onclick = openWizard;
+  $('#autobackup', main).onchange = e=>{ state._autobackup = e.target.checked; save(); };
+}
+
+function exportProjectCard(){
+  const p = state.project;
+  const name = p.name || 'Без названия';
+  const team = state.team.length ? state.team : [{name:'',organization:'',klass:'',contacts:''}];
+  const teamRows = team.map(m=>`<tr>
+    <td>${esc(m.name||'')||'&nbsp;'}</td>
+    <td>${esc(m.organization||'')||'&nbsp;'}</td>
+    <td>${esc(m.klass||'')||'&nbsp;'}</td>
+    <td>${esc(m.contacts||'')||'&nbsp;'}</td></tr>`).join('');
+  const stages = state.stages.slice(0,4);
+  while(stages.length < 4) stages.push({label:'',start:'',end:'',tasks:[],result:''});
+  const maxTasks = Math.max(3, ...stages.map(s=>(s.tasks||[]).length));
+  const headerRow = stages.map((s,i)=>`<td class="stage-header">
+    <div>Этап ${i+1}</div>
+    <div style="font-weight:normal;font-size:9.5pt;margin-top:4px">Срок реализации</div>
+    <div style="font-weight:normal;font-size:9.5pt">${s.start?fmtRuDate(s.start):'от'} — ${s.end?fmtRuDate(s.end):'до'}</div></td>`).join('');
+  let taskRows = '';
+  for(let i=0; i<maxTasks; i++){
+    taskRows += '<tr>';
+    stages.forEach((s,si)=>{
+      const t = (s.tasks||[])[i];
+      taskRows += `<td><b>Задача ${si+1}.${i+1}.</b><br>
+        <span style="font-size:10pt">${t?esc(t.text).replace(/\n/g,'<br>'):'&nbsp;'}</span></td>`;
+    });
+    taskRows += '</tr>';
+  }
+  const resultRow = stages.map(s=>`<td class="result-row">
+    <div style="font-weight:bold">Планируемый результат</div>
+    <div style="font-weight:normal;font-size:10pt;margin-top:6px">${esc(s.result||'').replace(/\n/g,'<br>')||'&nbsp;'}</div></td>`).join('');
+  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8"><title>Проектная карта — ${esc(name)}</title>
+<style>
+  @page WordSection1 { size: 21cm 29.7cm; margin: 2cm 1.5cm 2cm 1.5cm; }
+  div.WordSection1 { page: WordSection1; }
+  body { font-family: 'Times New Roman', serif; font-size: 11pt; }
+  h1 { text-align: center; font-size: 14pt; margin: 0 0 6px 0; }
+  .subtitle { text-align: center; font-style: italic; font-size: 10pt; color: #444; margin: 0 0 18px 0; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+  td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 10.5pt; }
+  .cell-label { background: #f2f2f2; font-weight: bold; }
+  .stage-header { background: #f2f2f2; text-align: center; font-weight: bold; }
+  .result-row { background: #f2f2f2; text-align: center; }
+  .org-title { text-align: center; font-weight: bold; font-size: 12pt; margin: 4px 0 14px 0; line-height: 1.4; }
+  .sep { border: none; border-top: 1px solid #000; margin: 10px 0 16px 0; }
+  .pb { page-break-before: always; }
+</style></head>
+<body><div class="WordSection1">
+  <h1>Проектная карта «${esc(name)}»</h1>
+  <p class="subtitle">(название проекта согласно приказу, которым он утвержден)</p>
+  <table>
+    <tr><td colspan="4" class="cell-label">Ф.И.О детей в проекте на момент зачисления</td></tr>
+    <tr><td class="cell-label" style="width:26%">ФИО</td><td class="cell-label" style="width:30%">Образовательная организация</td>
+      <td class="cell-label" style="width:14%">Класс</td><td class="cell-label" style="width:30%">Контакты</td></tr>
+    ${teamRows}
+    <tr><td colspan="4" class="cell-label">Краткое описание проекта</td></tr>
+    <tr><td colspan="4">${esc(p.description||'').replace(/\n/g,'<br>')||'&nbsp;'}</td></tr>
+    <tr><td colspan="4" class="cell-label">Актуальность</td></tr>
+    <tr><td colspan="4">${esc(p.relevance||'').replace(/\n/g,'<br>')||'&nbsp;'}</td></tr>
+    <tr><td colspan="4" class="cell-label">Цель</td></tr>
+    <tr><td colspan="4">${esc(p.goal||'').replace(/\n/g,'<br>')||'&nbsp;'}</td></tr>
+  </table>
+  <div class="pb"></div>
+  <p class="org-title">Автономная некоммерческая организация<br>
+    дополнительного образования<br>«Детский технопарк «Кванториум»</p>
+  <hr class="sep">
+  <table>
+    <tr><td colspan="4" style="text-align:center;font-weight:bold;background:#f2f2f2;font-size:11pt">Этапы и задачи в проекте</td></tr>
+    <tr><td colspan="4" style="text-align:center;font-style:italic;font-size:9.5pt">(Ход выполнения работ с конкретными действиями и сроком их выполнения)</td></tr>
+    <tr>${headerRow}</tr>${taskRows}<tr>${resultRow}</tr>
+  </table>
+</div></body></html>`;
+  download(new Blob(['\ufeff',html],{type:'application/msword'}), `Проектная_карта_${safeFilename(name)}.doc`);
+  toast('Проектная карта сохранена');
+}
+
+function exportWord(){
+  const p = state.project;
+  const cardRows = PROJECT_CARD_FIELDS.map(f=>`<tr>
+    <td style="padding:6px 10px;border:1px solid #ccc;background:#f4f6fa;font-weight:600;width:220px;vertical-align:top">${esc(f.label)}</td>
+    <td style="padding:6px 10px;border:1px solid #ccc;white-space:pre-wrap">${esc(p[f.key]||'—')}</td></tr>`).join('');
+  const tasks = ['todo','doing','done'].map(k=>{
+    const label = {todo:'Надо сделать', doing:'В работе', done:'Готово'}[k];
+    const items = state.kanban[k];
+    return `<h3>${label}</h3>${items.length?'<ul>' + items.map(t=>`<li>${esc(t.text)}</li>`).join('') + '</ul>':'<p>—</p>'}`;
+  }).join('');
+  const journal = state.journal.length ? state.journal.map(j=>`<p><b>${esc(j.date)} — ${esc(j.title)}</b><br>${esc(j.text).replace(/\n/g,'<br>')}</p>`).join('') : '<p>—</p>';
+  const stages = state.stages.map(s=>`<li>${s.done?'☑':'☐'} ${esc(s.label)}</li>`).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+  <head><meta charset="utf-8"><title>${esc(p.name||'Проект')}</title></head>
+  <body style="font-family:Calibri,Arial,sans-serif;font-size:11pt">
+    <h1>${esc(p.name||'Проект без названия')}</h1>
+    <p style="color:#666">Экспорт VolVoxPro — ${fmtDate()}</p>
+    <h2>Проектная карта</h2><table style="border-collapse:collapse;width:100%">${cardRows}</table>
+    <h2>Этапы</h2><ul>${stages}</ul>
+    <h2>Задачи</h2>${tasks}
+    <h2>Журнал</h2>${journal}
+  </body></html>`;
+  download(new Blob(['\ufeff',html],{type:'application/msword'}), `volvoxpro-${Date.now()}.doc`);
+  toast('Word сохранён');
+}
+
+function exportXLSX(){
+  if(typeof XLSX === 'undefined') return toast('XLSX не загрузилась', true);
+  const p = state.project;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Раздел','Значение'], ...PROJECT_CARD_FIELDS.map(f=>[f.label, p[f.key]||''])]), 'Карта');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Этап','Начало','Конец','Задачи','Результат','Готов'],
+    ...state.stages.map(s=>[s.label, s.start||'', s.end||'', (s.tasks||[]).map(t=>t.text).join('; '), s.result||'', s.done?'✓':''])]), 'Этапы');
+  const taskRows = [['Колонка','Задача','Исполнитель']];
+  ['todo','doing','done'].forEach(k=>{
+    const label = {todo:'Надо сделать', doing:'В работе', done:'Готово'}[k];
+    state.kanban[k].forEach(t=>{
+      const m = state.team.find(x=>x.id===t.assignee);
+      taskRows.push([label, t.text, m?m.name:'']);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(taskRows), 'Задачи');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ФИО','Организация','Класс','Контакты','Роль'],
+    ...state.team.map(m=>[m.name, m.organization||'', m.klass||'', m.contacts||'', m.role||''])]), 'Команда');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Дата','Заголовок','Описание'], ...state.journal.map(j=>[j.date, j.title, j.text])]), 'Журнал');
+  XLSX.writeFile(wb, `volvoxpro-${Date.now()}.xlsx`);
+  toast('Excel сохранён');
+}
+
+function exportMarkdown(){
+  const p = state.project;
+  let md = `# ${p.name||'Проект'}\n\n_Экспорт VolVoxPro — ${fmtDate()}_\n\n`;
+  PROJECT_CARD_FIELDS.forEach(f=>{ if(p[f.key]) md += `## ${f.label}\n\n${p[f.key]}\n\n`; });
+  md += `## Этапы и задачи\n\n`;
+  state.stages.forEach((s,i)=>{
+    md += `### Этап ${i+1}: ${s.label}${s.done?' ✓':''}\n\n`;
+    if(s.start || s.end) md += `_Срок: ${s.start||'?'} — ${s.end||'?'}_\n\n`;
+    (s.tasks||[]).forEach((t,j)=>md += `- Задача ${i+1}.${j+1}. ${t.text}\n`);
+    if(s.result) md += `\n**Результат:** ${s.result}\n`;
+    md += `\n`;
+  });
+  download(new Blob([md],{type:'text/markdown'}), `volvoxpro-${Date.now()}.md`);
+  toast('Markdown сохранён');
+}
+
+function exportHtmlSlides(){
+  const slides = buildSlides();
+  const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>${esc(state.project.name||'Защита')}</title>
+  <style>
+    body{margin:0;font-family:-apple-system,sans-serif;background:#0a0f1a;color:#e6ecf5}
+    .slide{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:10vh 10vw;box-sizing:border-box;page-break-after:always;border-bottom:1px solid #1e2638}
+    h1{font-size:54px;margin:0 0 20px}h2{font-size:28px;color:#8bbcff;text-transform:uppercase;letter-spacing:2px;margin:0 0 18px}
+    p,li{font-size:20px;line-height:1.6;color:#c8d4e6;white-space:pre-wrap}ul{padding-left:22px}
+  </style></head><body>
+  ${slides.map(s=>s.h==='h1'?`<section class="slide"><h1>${esc(s.title)}</h1>${s.sub?`<p>${esc(s.sub)}</p>`:''}</section>`
+    :`<section class="slide"><h2>${esc(s.title)}</h2>${s.body?`<p>${esc(s.body)}</p>`:''}${s.list?`<ul>${s.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</section>`).join('')}
+  </body></html>`;
+  download(new Blob([html],{type:'text/html'}), `volvoxpro-slides-${Date.now()}.html`);
+  toast('HTML-слайды сохранены');
+}
+
+/* ============ ТЕМА / МЕНТОР / ПОИСК ============ */
+function applyTheme(){ document.documentElement.setAttribute('data-theme', state.theme||'dark'); }
+$('#themeBtn').onclick = ()=>{ state.theme = state.theme==='light'?'dark':'light'; save(); applyTheme(); };
+$('#mentorBtn').onclick = ()=>{
+  if(state.mentorMode){
+    state.mentorMode = false;
+    sessionStorage.removeItem(MENTOR_AUTH_KEY);
+    save(); renderMain(); $('#mentorBtn').classList.remove('on');
+    toast('Ментор выключен'); return;
+  }
+  if(sessionStorage.getItem(MENTOR_AUTH_KEY) === '1'){
+    state.mentorMode = true; save(); renderMain(); $('#mentorBtn').classList.add('on');
+    toast('Ментор включён'); return;
+  }
+  const p = prompt('Пароль ментора:');
+  if(p === null) return;
+  if(p === MENTOR_PASSWORD){
+    sessionStorage.setItem(MENTOR_AUTH_KEY,'1');
+    state.mentorMode = true; save(); renderMain(); $('#mentorBtn').classList.add('on');
+    toast('Ментор включён');
+  } else toast('Неверный пароль', true);
+};
+$('#searchBtn').onclick = ()=>{ $('#searchOverlay').classList.add('show'); const inp = $('#searchInput'); inp.value=''; inp.focus(); renderSearch(''); };
+$('#searchOverlay').addEventListener('click', e=>{ if(e.target === $('#searchOverlay')) $('#searchOverlay').classList.remove('show'); });
+function renderSearch(q){
+  q = q.trim().toLowerCase();
+  const results = [];
+  function push(group, items){ if(items.length) results.push({group, items}); }
+  push('Материалы', allMaterials().filter(m=>!q || (m.title+' '+(m.desc||'')+' '+m.tag).toLowerCase().includes(q)).slice(0,5)
+    .map(m=>({label:m.icon+' '+m.title, sub:(m.desc||'').slice(0,90), action:()=>{
+      state.section='materials'; state.materialFilter='Все'; save(); $('#searchOverlay').classList.remove('show'); renderNav(); renderMain();
+      setTimeout(()=>openPdf(m.id), 200);
+    }})));
+  push('Идеи', IDEA_LIBRARY.filter(i=>!q || (i.title+' '+i.desc+' '+i.cat).toLowerCase().includes(q)).slice(0,5)
+    .map(i=>({label:i.title, sub:i.cat, action:()=>{
+      state.section='ideas'; state.ideaFilter=i.cat; save(); $('#searchOverlay').classList.remove('show'); renderNav(); renderMain();
+    }})));
+  push('Карта', PROJECT_CARD_FIELDS.filter(f=>{ const v=state.project[f.key]||''; return v && (!q || v.toLowerCase().includes(q) || f.label.toLowerCase().includes(q)); }).slice(0,5)
+    .map(f=>({label:f.label, sub:(state.project[f.key]||'').slice(0,90), action:()=>{
+      state.section='project'; state.projectTab='card'; save(); $('#searchOverlay').classList.remove('show'); renderNav(); renderMain();
+    }})));
+  push('Задачи', allTasks().filter(t=>!q || t.text.toLowerCase().includes(q)).slice(0,6)
+    .map(t=>({label:t.text, sub:{todo:'Надо', doing:'В работе', done:'Готово'}[t.col], action:()=>{
+      state.section='project'; state.projectTab='kanban'; save(); $('#searchOverlay').classList.remove('show'); renderNav(); renderMain();
+    }})));
+  const html = results.length ? results.map(g=>`<div class="search-group">
+    <h4>${g.group}</h4>${g.items.map((it,i)=>`<div class="search-item" data-g="${results.indexOf(g)}" data-i="${i}">
+      ${esc(it.label)}${it.sub?`<small>${esc(it.sub)}</small>`:''}</div>`).join('')}</div>`).join('')
+    : '<div class="empty">Ничего не найдено</div>';
+  $('#searchResults').innerHTML = html;
+  $$('#searchResults .search-item').forEach(el=>el.onclick = ()=>{
+    const g = results[+el.dataset.g], i = +el.dataset.i;
+    g.items[i].action();
+  });
+}
+$('#searchInput').addEventListener('input', e=>renderSearch(e.target.value));
+
+document.addEventListener('keydown', e=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  const inField = tag === 'input' || tag === 'textarea' || e.target.isContentEditable;
+  if(e.ctrlKey && e.key.toLowerCase() === 'k'){ e.preventDefault(); $('#searchBtn').click(); return; }
+  if(e.ctrlKey && e.key.toLowerCase() === 'z' && !inField){ e.preventDefault(); undo(); return; }
+  if(e.ctrlKey && e.key.toLowerCase() === 'e'){ e.preventDefault(); exportToFile(); return; }
+  if(e.ctrlKey && e.key.toLowerCase() === 's'){ e.preventDefault(); doSave(); toast('Сохранено'); return; }
+  if(e.ctrlKey && e.key.toLowerCase() === 'd'){ e.preventDefault(); exportProjectCard(); return; }
+  if(e.key === 'Escape'){ $('#searchOverlay').classList.remove('show'); $('#codeShowModal').classList.remove('show'); }
+  if(inField) return;
+  const map = {'1':'ideas','2':'materials','3':'project','4':'analytics','5':'board','6':'tools','7':'cloud','8':'export'};
+  if(map[e.key]){ state.section = map[e.key]; save(); renderNav(); renderMain(); }
+});
+
+let lastSnap = Date.now();
+setInterval(()=>{
+  if(Date.now() - lastSnap > 10*60*1000){ takeHistorySnapshot('авто'); lastSnap = Date.now(); }
+}, 60*1000);
+setInterval(()=>{
+  if(!state._autobackup) return;
+  const last = state._lastBackup || 0;
+  if(Date.now() - last > 24*60*60*1000) toast('Пора сделать резервную копию JSON', true);
+}, 60*60*1000);
+
+/* ============ СТАРТ ============ */
+if(state.mentorMode && sessionStorage.getItem(MENTOR_AUTH_KEY) !== '1'){
+  state.mentorMode = false;
+  save();
+}
+applyTheme();
+if(state.mentorMode) $('#mentorBtn').classList.add('on');
+renderNav();
+renderMain();
+loadCustomMaterials().then(()=>{ if(state.section === 'materials') renderMain(); });
+initFirebase();
+if(!state.onboarded && !Object.keys(state.project).length) setTimeout(openWizard, 400);
+</script>
+<script src="github-upload.js"></script>
+</body>
+</html>
